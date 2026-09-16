@@ -1160,7 +1160,11 @@ class VirtualTryonApp {
         card.classList.add("selected");
       }
 
-      const badge = item.category === "set" ? `<span class="badge-3d" style="background: rgba(212,175,55,0.25); color: #f5d77f; border: 1px solid rgba(212,175,55,0.5);">✨ BRIDAL SUITE</span>` : "";
+      const badge = item.is3D
+        ? `<span class="badge-3d" style="background: rgba(46, 213, 115, 0.22); color: #55efc4; border: 1px solid rgba(46, 213, 115, 0.5);">📦 3D CAD</span>`
+        : (item.category === "set"
+          ? `<span class="badge-3d" style="background: rgba(212,175,55,0.25); color: #f5d77f; border: 1px solid rgba(212,175,55,0.5);">✨ BRIDAL SUITE</span>`
+          : "");
 
       card.innerHTML = `
         <div class="card-thumb">

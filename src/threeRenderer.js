@@ -52,7 +52,6 @@ export class Jewellery3DRenderer {
     };
 
     this.segTexture = null;
-    this.segEnabled = false;
 
     // Track which preset is currently applied so we only update on change
     this._currentNecklacePreset  = null;
@@ -250,48 +249,47 @@ export class Jewellery3DRenderer {
       depthTest: true
     });
 
-    const occGeo = new THREE.CylinderGeometry(42, 50, 108, 32, 1, true);
+    const occGeo = new THREE.CylinderGeometry(36, 42, 96, 28, 1, true);
     this.neckOccluderMesh = new THREE.Mesh(occGeo, this._occluderMat);
-    this.neckOccluderMesh.position.set(0, 0, -2);
+    this.neckOccluderMesh.position.set(0, 0, -18);
     this.neckOccluderMesh.renderOrder = 0;
     this.jewelleryRig.add(this.neckOccluderMesh);
 
-    // Lower-face / jaw volume — hides chain behind throat on profile turns
+    // Small nape volume only — never covers the front of the necklace
     this.chinOccluderMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(1, 20, 14),
+      new THREE.SphereGeometry(1, 16, 12),
       this._occluderMat
     );
-    this.chinOccluderMesh.position.set(0, 52, 14);
+    this.chinOccluderMesh.position.set(0, 8, -28);
     this.chinOccluderMesh.renderOrder = 0;
     this.jewelleryRig.add(this.chinOccluderMesh);
 
-    // 9. Soft Multiply Skin Contact Shadow — physically grounds the jewellery to the skin
     const ribbonGeo = this.buildNecklaceGeometry(850, 850, 100);
     this.necklaceShadowMat = new THREE.MeshBasicMaterial({
       transparent: true,
       color: 0x120804,
-      opacity: 0.35,
+      opacity: 0.12,
       blending: THREE.MultiplyBlending,
       depthTest: true,
       depthWrite: false
     });
     this.necklaceShadowMesh = new THREE.Mesh(ribbonGeo.clone(), this.necklaceShadowMat);
-    this.necklaceShadowMesh.position.set(0, -2, -2);
+    this.necklaceShadowMesh.position.set(0, -1, -3);
     this.necklaceShadowMesh.renderOrder = 1;
+    this.necklaceShadowMesh.visible = false;
     this.jewelleryRig.add(this.necklaceShadowMesh);
 
-    // 10. Anatomical curved necklace mesh wrapping snugly around the neck
+    // Photo necklace — keep PBR mild so catalog gold/gems stay visible (not black)
     this.necklaceMat = new THREE.MeshStandardMaterial({
       transparent: true,
-      alphaTest:   0.22,
+      alphaTest:   0.08,
       side:        THREE.DoubleSide,
       depthTest:   true,
       depthWrite:  false,
-      roughness:   0.24,
-      metalness:   0.80,
-      envMapIntensity: 1.4
+      roughness:   0.38,
+      metalness:   0.12,
+      envMapIntensity: 0.85
     });
-    this._patchNecklaceSegmentationShader(this.necklaceMat);
     // Default to generic preset; overridden when an ornament is selected
     this.applyMaterialPreset(this.necklaceMat, "gold");
     this.necklaceMesh = new THREE.Mesh(ribbonGeo, this.necklaceMat);
@@ -324,11 +322,12 @@ export class Jewellery3DRenderer {
     // Head-aligned occluder (full yaw/pitch) — sibling of rig, not torso-damped
     this.headOccluderGroup = new THREE.Group();
     this.jawOccluderMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(1, 18, 12),
+      new THREE.SphereGeometry(1, 16, 12),
       this._occluderMat
     );
     this.headOccluderGroup.add(this.jawOccluderMesh);
     this.headOccluderGroup.renderOrder = 0;
+    this.headOccluderGroup.visible = false;
     this.scene.add(this.headOccluderGroup);
 
     this.jewelleryRig.visible = false;
@@ -416,48 +415,39 @@ export class Jewellery3DRenderer {
    * @param {number} baseWidth - Desired world-space width across collarbones
    */
   buildNecklaceGeometry(texWidth, texHeight, baseHeight = 100) {
-    const aspect = (texWidth && texHeight) ? (texWidth / texHeight) : 1.0;
     const h = baseHeight;
-    const w = h * aspect;
-
-    const segU = 52; // smooth horizontal wrap around neck
-    const segV = 24; // smooth vertical gradation from upper neck to chest
+    const segU = 64;
+    const segV = 20;
     const positions = [], uvs = [], indices = [];
 
-    // Active necklace content in CaratLane catalog photos spans from v = 0 to v = 0.78
-    const activeV = 0.78;
+    // Catalog photos: jewellery lives in roughly the upper 80% of the PNG
+    const activeV = 0.82;
 
     for (let j = 0; j <= segV; j++) {
-      const v = j / segV; // 0 = upper neck, 1 = lower pendant
+      const v = j / segV;
 
-      // Exact neck-length fit (100% neck coverage):
-      // v = 0 sits at +0.50 * h (EXACTLY at chin/jaw level)
-      // v = 0.39 sits at 0 (EXACTLY at center of the neck)
-      // v = 0.78 sits at -0.50 * h (EXACTLY at collarbone / shirt line)
-      const y = (0.50 - (v / activeV)) * h;
+      const y = (0.42 - (v / activeV) * 0.92) * h;
 
-      // Wrap arc: wide 220° cervical arc hugging neck cylinder
-      const arc = (Math.PI * 1.22) * (1.0 - v * 0.36);
+      // Wide wrap at the collar that still stays in front of the nape occluder
+      const arc = (Math.PI * 1.38) * (1.0 - v * 0.22);
       const startTheta = -arc / 2;
 
-      // Neck radius: snug fit (48 at upper neck, flaring to 70 at collarbone)
-      const radius = 48 + v * 22;
-
-      // Forward slope: gentle drape over the throat onto clavicle
-      const zFlare = v * 8;
+      // Oval neck: wider across the collarbones, flatter toward camera
+      const radiusX = 54 + v * 18;
+      const radiusZ = 32 + v * 10;
+      const zPush = 16 + v * 10;
 
       for (let i = 0; i <= segU; i++) {
-        const u = i / segU; // 0 = left chain, 1 = right chain
+        const u = i / segU;
         const theta = startTheta + u * arc;
 
-        // Concentric cylinder coordinates centered on spinal rotation axis (0, 0)
-        const x = radius * Math.sin(theta);
-        // z = R * cos(theta) places front at +R, sides at 0, back at -R
-        const z = radius * Math.cos(theta) + 2 + zFlare;
+        const x = radiusX * Math.sin(theta);
+        const z = radiusZ * Math.cos(theta) + zPush;
 
-        // Subtle catenary sag for lower pendant
         const centerDist = Math.abs(u - 0.5) * 2;
-        const sagY = (v > 0.25) ? -(1 - centerDist * centerDist) * (h * 0.04) * ((v - 0.25) / 0.75) : 0;
+        const sagY = (v > 0.2)
+          ? -(1 - centerDist * centerDist) * (h * 0.055) * ((v - 0.2) / 0.8)
+          : 0;
 
         positions.push(x, y + sagY, z);
         uvs.push(u, 1.0 - v);
@@ -762,91 +752,317 @@ export class Jewellery3DRenderer {
     this.loadTexture(url);
   }
 
-  loadLeafPendantModel(onLoaded) {
-    if (this.modelCache.has("leaf-pendant-necklace")) {
-      const cached = this.modelCache.get("leaf-pendant-necklace");
+  // ── Helper: Build 3D CatmullRom neck chain ────────────────────────────────
+  build3DNecklaceChain(material, radiusX = 82, radiusZ = 34, tubeRadius = 1.8, drape = 16) {
+    const arc = Math.PI * 1.15;
+    const startTheta = Math.PI - arc / 2;
+    const curvePoints = [];
+    for (let i = 0; i <= 36; i++) {
+      const u = i / 36;
+      const theta = startTheta + u * arc;
+      const x = -radiusX * Math.sin(theta);
+      const z = -radiusZ * Math.cos(theta);
+      const centerDist = Math.abs(theta - Math.PI);
+      const drapeY = -Math.cos(centerDist * 0.85) * drape;
+      curvePoints.push(new THREE.Vector3(x, drapeY, z));
+    }
+    const chainPath = new THREE.CatmullRomCurve3(curvePoints);
+    const chainGeo = new THREE.TubeGeometry(chainPath, 52, tubeRadius, 10, false);
+    return { mesh: new THREE.Mesh(chainGeo, material), path: chainPath };
+  }
+
+  // ── Helper: Shared contact drop shadow ────────────────────────────────────
+  buildContactShadow(w = 64, h = 50, opacity = 0.50) {
+    const shadowGeo = new THREE.PlaneGeometry(w, h);
+    const shadowCanvas = document.createElement("canvas");
+    shadowCanvas.width = 64; shadowCanvas.height = 64;
+    const sCtx = shadowCanvas.getContext("2d");
+    const grad = sCtx.createRadialGradient(32, 32, 4, 32, 32, 30);
+    grad.addColorStop(0, "rgba(18, 12, 6, 0.45)");
+    grad.addColorStop(0.6, "rgba(18, 12, 6, 0.15)");
+    grad.addColorStop(1, "rgba(18, 12, 6, 0.0)");
+    sCtx.fillStyle = grad;
+    sCtx.fillRect(0, 0, 64, 64);
+    const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      map: shadowTex, transparent: true, depthWrite: false, opacity: opacity
+    });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.renderOrder = 1;
+    return shadowMesh;
+  }
+
+  getOrBuild3DModel(neckItem, onLoaded) {
+    const key = neckItem.id || neckItem.model3dKey || "3d-default";
+    if (this.modelCache.has(key)) {
+      const cached = this.modelCache.get(key);
       if (onLoaded) onLoaded(cached);
       return cached;
     }
 
-    this.stlLoader.load(
-      "/models/leaf-pendant.stl",
-      (geometry) => {
-        geometry.center();
-        geometry.computeVertexNormals();
+    const group = new THREE.Group();
 
-        // 22K Solid Yellow Gold PBR (authentic jewellery sheen)
-        const goldMat = new THREE.MeshStandardMaterial({
-          color: 0xD4AF37,
-          roughness: 0.28,
-          metalness: 0.82,
-          envMapIntensity: 1.25
-        });
-        if (this.envMap) goldMat.envMap = this.envMap;
+    // 1. 3D Leaf Pendant (STL from Rhino CAD)
+    if (key.includes("leaf") || key.includes("006")) {
+      const goldMat = new THREE.MeshStandardMaterial({
+        color: 0xD4AF37, roughness: 0.26, metalness: 0.84, envMapIntensity: 1.25
+      });
+      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(goldMat, 82, 34, 1.8, 16);
+      group.add(chainMesh);
 
-        const leafMesh = new THREE.Mesh(geometry, goldMat);
-        // Scale to ~28 x 35 units (natural jewellery pendant scale)
-        leafMesh.scale.set(0.72, 0.72, 0.72);
+      const centerPt = chainPath.getPointAt(0.5);
+      const bailGeo = new THREE.TorusGeometry(3.5, 0.9, 12, 24);
+      const bailMesh = new THREE.Mesh(bailGeo, goldMat);
+      bailMesh.position.set(centerPt.x, centerPt.y - 3, centerPt.z + 1);
+      group.add(bailMesh);
 
-        const group = new THREE.Group();
+      const stlPath = neckItem.model || "/models/leaf-pendant.stl";
+      this.stlLoader.load(
+        stlPath,
+        (geometry) => {
+          geometry.center();
+          geometry.computeVertexNormals();
+          const leafMesh = new THREE.Mesh(geometry, goldMat);
+          leafMesh.scale.set(0.72, 0.72, 0.72);
+          leafMesh.position.set(centerPt.x, centerPt.y - 24, centerPt.z + 2);
+          group.add(leafMesh);
 
-        // 1. Solid gold neck torque/chain that wraps around the neck
-        const radiusX = 82;
-        const radiusZ = 34;
-        const arc = Math.PI * 1.08;
-        const startTheta = Math.PI - arc / 2;
-        const curvePoints = [];
-        for (let i = 0; i <= 32; i++) {
-          const u = i / 32;
-          const theta = startTheta + u * arc;
-          const x = -radiusX * Math.sin(theta);
-          const z = -radiusZ * Math.cos(theta);
-          const centerDist = Math.abs(theta - Math.PI);
-          const drapeY = -Math.cos(centerDist * 0.85) * 16;
-          curvePoints.push(new THREE.Vector3(x, drapeY, z));
+          const shadow = this.buildContactShadow(60, 50, 0.50);
+          shadow.position.set(centerPt.x, centerPt.y - 24, centerPt.z - 2);
+          group.add(shadow);
+
+          this.modelCache.set(key, group);
+          if (onLoaded) onLoaded(group);
+        },
+        undefined,
+        (err) => {
+          console.warn("Failed to load leaf STL:", err);
+          if (onLoaded) onLoaded(group);
         }
-        const chainPath = new THREE.CatmullRomCurve3(curvePoints);
-        const chainGeo = new THREE.TubeGeometry(chainPath, 48, 1.8, 10, false);
-        const chainMesh = new THREE.Mesh(chainGeo, goldMat);
-        group.add(chainMesh);
+      );
+      return group;
+    }
 
-        // 2. Center bail ring
-        const centerPt = chainPath.getPointAt(0.5);
-        const bailGeo = new THREE.TorusGeometry(3.5, 0.9, 12, 24);
-        const bailMesh = new THREE.Mesh(bailGeo, goldMat);
-        bailMesh.position.set(centerPt.x, centerPt.y - 3, centerPt.z + 1);
-        group.add(bailMesh);
+    // 2. 3D Brilliant Solitaire Diamond (Faceted gem + 6-prong platinum basket)
+    if (key.includes("diamond")) {
+      const platMat = new THREE.MeshStandardMaterial({
+        color: 0xF0F4F8, roughness: 0.16, metalness: 0.88, envMapIntensity: 1.5
+      });
+      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(platMat, 80, 32, 1.5, 14);
+      group.add(chainMesh);
 
-        // 3. Leaf pendant hanging from the bail ring
-        leafMesh.position.set(centerPt.x, centerPt.y - 24, centerPt.z + 2);
-        group.add(leafMesh);
+      const centerPt = chainPath.getPointAt(0.5);
+      const bailGeo = new THREE.TorusGeometry(3.0, 0.8, 12, 24);
+      const bailMesh = new THREE.Mesh(bailGeo, platMat);
+      bailMesh.position.set(centerPt.x, centerPt.y - 3, centerPt.z + 1);
+      group.add(bailMesh);
 
-        // 4. Contact shadow on chest
-        const shadowGeo = new THREE.PlaneGeometry(60, 50);
-        const shadowCanvas = document.createElement("canvas");
-        shadowCanvas.width = 64; shadowCanvas.height = 64;
-        const sCtx = shadowCanvas.getContext("2d");
-        const grad = sCtx.createRadialGradient(32, 32, 4, 32, 32, 30);
-        grad.addColorStop(0, "rgba(18, 12, 6, 0.45)");
-        grad.addColorStop(0.6, "rgba(18, 12, 6, 0.15)");
-        grad.addColorStop(1, "rgba(18, 12, 6, 0.0)");
-        sCtx.fillStyle = grad;
-        sCtx.fillRect(0, 0, 64, 64);
-        const shadowTex = new THREE.CanvasTexture(shadowCanvas);
-        const shadowMat = new THREE.MeshBasicMaterial({
-          map: shadowTex, transparent: true, depthWrite: false, opacity: 0.50
-        });
-        const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
-        shadowMesh.position.set(centerPt.x, centerPt.y - 24, centerPt.z - 2);
-        shadowMesh.renderOrder = 1;
-        group.add(shadowMesh);
+      // Diamond group
+      const diaGroup = new THREE.Group();
+      diaGroup.position.set(centerPt.x, centerPt.y - 18, centerPt.z + 2);
 
-        this.modelCache.set("leaf-pendant-necklace", group);
-        if (onLoaded) onLoaded(group);
-      },
-      undefined,
-      (err) => console.warn("Failed to load leaf STL:", err)
-    );
+      // 6 Platinum Prongs
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        const prongGeo = new THREE.CylinderGeometry(0.55, 0.55, 7.5, 8);
+        const prongMesh = new THREE.Mesh(prongGeo, platMat);
+        prongMesh.position.set(Math.sin(angle) * 7.0, 0, Math.cos(angle) * 7.0);
+        diaGroup.add(prongMesh);
+      }
+
+      // Base ring
+      const baseRing = new THREE.Mesh(new THREE.TorusGeometry(7.0, 0.7, 8, 20), platMat);
+      baseRing.rotation.x = Math.PI / 2;
+      baseRing.position.y = -3.5;
+      diaGroup.add(baseRing);
+
+      // Faceted Solitaire Brilliant Diamond
+      const diaMat = new THREE.MeshStandardMaterial({
+        color: 0xFFFFFF, roughness: 0.04, metalness: 0.12, envMapIntensity: 2.8
+      });
+      // Upper crown
+      const crownGeo = new THREE.CylinderGeometry(4.8, 7.4, 3.2, 16);
+      const crownMesh = new THREE.Mesh(crownGeo, diaMat);
+      crownMesh.position.y = 1.4;
+      diaGroup.add(crownMesh);
+      // Lower pavilion
+      const pavGeo = new THREE.ConeGeometry(7.4, 8.5, 16);
+      pavGeo.rotateX(Math.PI);
+      const pavMesh = new THREE.Mesh(pavGeo, diaMat);
+      pavMesh.position.y = -4.2;
+      diaGroup.add(pavMesh);
+
+      group.add(diaGroup);
+
+      const shadow = this.buildContactShadow(48, 40, 0.45);
+      shadow.position.set(centerPt.x, centerPt.y - 18, centerPt.z - 2);
+      group.add(shadow);
+
+      this.modelCache.set(key, group);
+      if (onLoaded) onLoaded(group);
+      return group;
+    }
+
+    // 3. 3D Colombian Emerald Octagon Pendant (Stepped Bezel in 18K Yellow Gold)
+    if (key.includes("emerald")) {
+      const goldMat = new THREE.MeshStandardMaterial({
+        color: 0xD4AF37, roughness: 0.22, metalness: 0.84, envMapIntensity: 1.3
+      });
+      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(goldMat, 80, 32, 1.6, 15);
+      group.add(chainMesh);
+
+      const centerPt = chainPath.getPointAt(0.5);
+      const bailGeo = new THREE.TorusGeometry(3.2, 0.8, 12, 24);
+      const bailMesh = new THREE.Mesh(bailGeo, goldMat);
+      bailMesh.position.set(centerPt.x, centerPt.y - 3, centerPt.z + 1);
+      group.add(bailMesh);
+
+      const emGroup = new THREE.Group();
+      emGroup.position.set(centerPt.x, centerPt.y - 20, centerPt.z + 2);
+
+      // Gold stepped octagonal bezel frame
+      const bezelGeo = new THREE.CylinderGeometry(8.8, 8.8, 4.0, 8);
+      const bezelMesh = new THREE.Mesh(bezelGeo, goldMat);
+      emGroup.add(bezelMesh);
+
+      // Emerald gem
+      const emMat = new THREE.MeshStandardMaterial({
+        color: 0x00A86B, roughness: 0.12, metalness: 0.22, envMapIntensity: 2.0
+      });
+      const gemGeo = new THREE.CylinderGeometry(7.6, 7.6, 4.4, 8);
+      const gemMesh = new THREE.Mesh(gemGeo, emMat);
+      gemMesh.position.z = 0.5;
+      emGroup.add(gemMesh);
+
+      group.add(emGroup);
+
+      const shadow = this.buildContactShadow(52, 44, 0.48);
+      shadow.position.set(centerPt.x, centerPt.y - 20, centerPt.z - 2);
+      group.add(shadow);
+
+      this.modelCache.set(key, group);
+      if (onLoaded) onLoaded(group);
+      return group;
+    }
+
+    // 4. 3D Crimson Pear-Cut Ruby Teardrop (Halo Pavé Diamonds & Rose Gold)
+    if (key.includes("ruby")) {
+      const roseGoldMat = new THREE.MeshStandardMaterial({
+        color: 0xE8A598, roughness: 0.24, metalness: 0.82, envMapIntensity: 1.35
+      });
+      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(roseGoldMat, 80, 32, 1.5, 16);
+      group.add(chainMesh);
+
+      const centerPt = chainPath.getPointAt(0.5);
+      const bailGeo = new THREE.TorusGeometry(3.2, 0.8, 12, 24);
+      const bailMesh = new THREE.Mesh(bailGeo, roseGoldMat);
+      bailMesh.position.set(centerPt.x, centerPt.y - 3, centerPt.z + 1);
+      group.add(bailMesh);
+
+      const rubyGroup = new THREE.Group();
+      rubyGroup.position.set(centerPt.x, centerPt.y - 22, centerPt.z + 2);
+
+      // Pear ruby
+      const rubyMat = new THREE.MeshStandardMaterial({
+        color: 0xD10047, roughness: 0.14, metalness: 0.22, envMapIntensity: 1.8
+      });
+      const coneGeo = new THREE.ConeGeometry(6.5, 12, 16);
+      coneGeo.rotateX(Math.PI);
+      const coneMesh = new THREE.Mesh(coneGeo, rubyMat);
+      coneMesh.position.y = -3.0;
+      rubyGroup.add(coneMesh);
+
+      const roundGeo = new THREE.SphereGeometry(6.5, 16, 12);
+      roundGeo.scale(1.0, 0.8, 0.8);
+      const roundMesh = new THREE.Mesh(roundGeo, rubyMat);
+      roundMesh.position.y = 3.0;
+      rubyGroup.add(roundMesh);
+
+      // Pavé Diamond Halo
+      const diaMat = new THREE.MeshStandardMaterial({
+        color: 0xFFFFFF, roughness: 0.05, metalness: 0.15, envMapIntensity: 2.2
+      });
+      for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2;
+        const pSphere = new THREE.Mesh(new THREE.SphereGeometry(1.05, 8, 8), diaMat);
+        pSphere.position.set(Math.sin(a) * 8.2, Math.cos(a) * 9.8 - 0.5, 1.0);
+        rubyGroup.add(pSphere);
+      }
+
+      group.add(rubyGroup);
+
+      const shadow = this.buildContactShadow(54, 46, 0.48);
+      shadow.position.set(centerPt.x, centerPt.y - 22, centerPt.z - 2);
+      group.add(shadow);
+
+      this.modelCache.set(key, group);
+      if (onLoaded) onLoaded(group);
+      return group;
+    }
+
+    // 5. 3D Solid Gold Cuban Link Chain (Heavy interlocking links along neck curve)
+    if (key.includes("cuban") || key.includes("chain")) {
+      const goldMat = new THREE.MeshStandardMaterial({
+        color: 0xF2C654, roughness: 0.20, metalness: 0.88, envMapIntensity: 1.45
+      });
+
+      const radiusX = 80;
+      const radiusZ = 34;
+      const arc = Math.PI * 1.20;
+      const startTheta = Math.PI - arc / 2;
+      const curvePoints = [];
+      for (let i = 0; i <= 36; i++) {
+        const u = i / 36;
+        const theta = startTheta + u * arc;
+        const x = -radiusX * Math.sin(theta);
+        const z = -radiusZ * Math.cos(theta);
+        const centerDist = Math.abs(theta - Math.PI);
+        const drapeY = -Math.cos(centerDist * 0.85) * 12;
+        curvePoints.push(new THREE.Vector3(x, drapeY, z));
+      }
+      const chainPath = new THREE.CatmullRomCurve3(curvePoints);
+
+      // Place 36 interlocking torus links with alternating 42° roll angles
+      const numLinks = 36;
+      for (let i = 0; i < numLinks; i++) {
+        const u = i / (numLinks - 1);
+        const pt = chainPath.getPointAt(u);
+        const tangent = chainPath.getTangentAt(u);
+
+        const linkGeo = new THREE.TorusGeometry(3.6, 1.25, 8, 18);
+        linkGeo.scale(1.0, 1.35, 0.75);
+        const linkMesh = new THREE.Mesh(linkGeo, goldMat);
+        linkMesh.position.copy(pt);
+
+        // Align with tangent
+        const up = new THREE.Vector3(0, 1, 0);
+        const quaternion = new THREE.Quaternion().setFromUnitVectors(up, tangent);
+        linkMesh.quaternion.copy(quaternion);
+
+        // Alternate interlocking rotation
+        const altRoll = (i % 2 === 0) ? Math.PI / 4.2 : -Math.PI / 4.2;
+        linkMesh.rotateY(altRoll);
+
+        group.add(linkMesh);
+      }
+
+      // Contact shadow
+      const shadow = this.buildContactShadow(140, 40, 0.40);
+      shadow.position.set(0, -12, -2);
+      group.add(shadow);
+
+      this.modelCache.set(key, group);
+      if (onLoaded) onLoaded(group);
+      return group;
+    }
+
+    // Fallback: custom GLTF or default gold chain
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, roughness: 0.26, metalness: 0.84 });
+    const { mesh: chainMesh } = this.build3DNecklaceChain(goldMat, 80, 32, 1.8, 14);
+    group.add(chainMesh);
+    this.modelCache.set(key, group);
+    if (onLoaded) onLoaded(group);
+    return group;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -859,6 +1075,7 @@ export class Jewellery3DRenderer {
       this.leftEarringMesh.visible    = false;
       this.rightEarringMesh.visible   = false;
       if (this.active3DModel) this.active3DModel.visible = false;
+      this.custom3DModelGroup.visible = false;
       this.currentNecklaceId  = null;
       this.currentEarringsId  = null;
       return;
@@ -877,8 +1094,29 @@ export class Jewellery3DRenderer {
           this._currentNecklacePreset = preset;
         }
 
+        // ── 3D MODEL / PROCEDURAL MODE ──
+        if (neckItem.is3D) {
+          this.necklaceMesh.visible = false;
+          if (this.necklaceShadowMesh) this.necklaceShadowMesh.visible = false;
+
+          this.getOrBuild3DModel(neckItem, (modelGroup) => {
+            if (this.active3DModel && this.active3DModel !== modelGroup) {
+              this.active3DModel.visible = false;
+            }
+            this.active3DModel = modelGroup;
+            this.custom3DModelGroup.clear();
+            this.custom3DModelGroup.add(modelGroup);
+            modelGroup.visible = true;
+            this.custom3DModelGroup.visible = true;
+          });
+          return;
+        }
+
+        // ── PHOTOGRAPHIC 220° RIBBON MESH MODE ──
+        if (this.active3DModel) this.active3DModel.visible = false;
+        this.custom3DModelGroup.visible = false;
+
         if (neckItem.image) {
-          if (this.active3DModel) this.active3DModel.visible = false;
           this.loadTexture(neckItem.image, (tex) => {
             // ── ASPECT-RATIO FIX: rebuild geometry to match authentic photo proportions ──
             const imgW = tex.image ? (tex.image.naturalWidth  || tex.image.width  || 850) : 850;
@@ -891,14 +1129,13 @@ export class Jewellery3DRenderer {
             if (this.necklaceShadowMesh) {
               this.necklaceShadowMesh.geometry.dispose();
               this.necklaceShadowMesh.geometry = newGeo.clone();
-              this.necklaceShadowMat.map = tex;
-              this.necklaceShadowMat.needsUpdate = true;
-              this.necklaceShadowMesh.visible = true;
+              this.necklaceShadowMesh.visible = false;
             }
 
             this.necklaceMat.map = tex;
-            // With a texture, base colour should be white (texture provides colour)
             this.necklaceMat.color.set(0xffffff);
+            this.necklaceMat.metalness = Math.min(this.necklaceMat.metalness, 0.18);
+            this.necklaceMat.roughness = Math.max(this.necklaceMat.roughness, 0.28);
             this.necklaceMat.needsUpdate = true;
           });
           this.necklaceMesh.visible = true;
@@ -908,6 +1145,7 @@ export class Jewellery3DRenderer {
       this.necklaceMesh.visible = false;
       if (this.necklaceShadowMesh) this.necklaceShadowMesh.visible = false;
       if (this.active3DModel) this.active3DModel.visible = false;
+      this.custom3DModelGroup.visible = false;
       this.currentNecklaceId = null;
     }
 
@@ -960,90 +1198,32 @@ export class Jewellery3DRenderer {
     }
   }
 
-  /**
-   * Softly clips necklace alpha outside the person silhouette (selfie segmentation).
-   */
-  _patchNecklaceSegmentationShader(material) {
-    material.customProgramCacheKey = () => "necklace_seg_v1";
-    material.onBeforeCompile = (shader) => {
-      shader.uniforms.uSegMap = { value: null };
-      shader.uniforms.uSegMix = { value: 0.0 };
-      shader.uniforms.uSegMirror = { value: 0.0 };
-      shader.uniforms.uCanvasSize = {
-        value: new THREE.Vector2(this.canvas.width || 1280, this.canvas.height || 720)
-      };
-
-      shader.fragmentShader = shader.fragmentShader.replace(
-        "#include <alphatest_fragment>",
-        `
-        if (uSegMix > 0.01) {
-          vec2 segUv = gl_FragCoord.xy / uCanvasSize;
-          if (uSegMirror > 0.5) { segUv.x = 1.0 - segUv.x; }
-          float person = texture2D(uSegMap, segUv).r;
-          diffuseColor.a *= mix(1.0, smoothstep(0.22, 0.58, person), uSegMix);
-        }
-        #include <alphatest_fragment>
-        `
-      );
-      material.userData.segUniforms = shader.uniforms;
-    };
-  }
-
   _resolveFitProfile(activeOrnaments) {
     const fromItem = activeOrnaments?.necklace?.fitProfile;
     const fromTune = this.tuning.fitProfile;
     return { ...(fromTune || {}), ...(fromItem || {}) };
   }
 
-  _updateSegmentationUniforms(trackingData, isMirrored) {
-    const uniforms = this.necklaceMat.userData.segUniforms;
-    if (!uniforms) return;
-
-    const mask = trackingData?.segmentationMask;
-    if (!mask) {
-      uniforms.uSegMix.value = 0;
-      return;
-    }
-
-    const w = mask.width || mask.videoWidth || this.canvas.width;
-    const h = mask.height || mask.videoHeight || this.canvas.height;
-    if (!this.segTexture) {
-      this.segTexture = new THREE.Texture();
-      this.segTexture.minFilter = THREE.LinearFilter;
-      this.segTexture.magFilter = THREE.LinearFilter;
-      this.segTexture.flipY = false;
-    }
-    this.segTexture.image = mask;
-    this.segTexture.needsUpdate = true;
-    uniforms.uSegMap.value = this.segTexture;
-    uniforms.uSegMix.value = 0.72;
-    uniforms.uSegMirror.value = isMirrored ? 1.0 : 0.0;
-    if (uniforms.uCanvasSize) {
-      uniforms.uCanvasSize.value.set(this.canvas.width, this.canvas.height);
-    }
-  }
-
   _updateOccluders(anchors, fit, visibleH, neckScaleY, effectiveYaw) {
     const lengthMul = fit.lengthMul ?? 1.0;
-    const innerRad = 0.86;
+    const occHeight = Math.max(70, Math.min(110, 90 * lengthMul));
+    this.neckOccluderMesh.scale.set(0.72, occHeight / 96, 0.62);
+    this.neckOccluderMesh.position.set(0, 6, -22);
 
-    const occHeight = Math.max(72, Math.min(130, 100 * lengthMul));
-    this.neckOccluderMesh.scale.set(innerRad, occHeight / 108, innerRad * 0.92);
-
-    const chinLocalY =
-      anchors.neck?.chinY != null && anchors.neck?.y != null
-        ? ((anchors.neck.chinY - anchors.neck.y) * visibleH) / Math.max(0.35, neckScaleY)
-        : 48;
-    const jawW =
-      (anchors.neck?.neckWidth ?? anchors.faceWidth * 0.82) / 0.235;
-
-    this.chinOccluderMesh.position.set(0, chinLocalY + 8, 12 + Math.abs(effectiveYaw) * 8);
-    this.chinOccluderMesh.scale.set(jawW * 14, jawW * 11, jawW * 7);
+    const jawW = (anchors.neck?.neckWidth ?? anchors.faceWidth * 0.82) / 0.235;
+    this.chinOccluderMesh.position.set(0, 4, -32);
+    this.chinOccluderMesh.scale.set(jawW * 8, jawW * 10, jawW * 6);
   }
 
   _updateHeadOccluder(anchors, visibleW, visibleH, isMirrored, effectiveYaw, effectivePitch, effectiveRoll) {
     if (!this.headOccluderGroup || !anchors.chin) {
       if (this.headOccluderGroup) this.headOccluderGroup.visible = false;
+      return;
+    }
+    // Only engage on strong profile turns so the front collar stays fully visible
+    const absYaw = Math.abs(effectiveYaw);
+    if (absYaw < 0.22) {
+      this.headOccluderGroup.visible = false;
       return;
     }
     this.headOccluderGroup.visible = true;
@@ -1052,17 +1232,17 @@ export class Jewellery3DRenderer {
     const chinX = (normChinX - 0.5) * visibleW;
     const chinY = -(anchors.chin.y - 0.5) * visibleH;
 
-    this.headOccluderGroup.position.set(chinX, chinY - 6, 8);
+    this.headOccluderGroup.position.set(chinX, chinY - 4, -6);
     this.headOccluderGroup.rotation.set(
-      -effectivePitch * 0.55,
-      effectiveYaw * 0.92,
-      effectiveRoll * 0.65,
+      -effectivePitch * 0.4,
+      effectiveYaw * 0.85,
+      effectiveRoll * 0.4,
       "YXZ"
     );
 
-    const fw = (anchors.faceWidth / 0.28) * 36;
-    this.jawOccluderMesh.scale.set(fw * 1.05, fw * 0.88, fw * 0.48);
-    this.jawOccluderMesh.position.set(0, fw * 0.08, fw * 0.12);
+    const fw = (anchors.faceWidth / 0.28) * 22;
+    this.jawOccluderMesh.scale.set(fw * 0.7, fw * 0.55, fw * 0.35);
+    this.jawOccluderMesh.position.set(Math.sign(effectiveYaw) * fw * 0.15, fw * 0.04, -fw * 0.2);
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -1125,7 +1305,10 @@ export class Jewellery3DRenderer {
       ? (anchors.neck.neckLength * visibleH * lengthMul)
       : (anchors.faceHeight * 0.35 * visibleH * lengthMul);
 
-    const neckScaleY = (measuredNeckLengthWorld / 100) * this.tuning.scaleMultiplier;
+    const neckScaleY = Math.max(
+      0.55,
+      (measuredNeckLengthWorld / 100) * this.tuning.scaleMultiplier
+    );
 
     let measuredNeckRatio = (anchors.neck && anchors.neck.neckWidth)
       ? (anchors.neck.neckWidth / 0.235)
@@ -1136,8 +1319,8 @@ export class Jewellery3DRenderer {
       measuredNeckRatio = measuredNeckRatio * 0.45 + shoulderRatio * 0.55;
     }
 
-    const neckScaleX = measuredNeckRatio * this.tuning.scaleMultiplier * 1.12 * widthMul;
-    const neckScaleZ = neckScaleX * 0.94;
+    const neckScaleX = measuredNeckRatio * this.tuning.scaleMultiplier * 1.18 * widthMul;
+    const neckScaleZ = neckScaleX * 0.88;
     this.jewelleryRig.scale.set(neckScaleX, neckScaleY, neckScaleZ);
     this.jewelleryRig.position.set(
       neckWorld.x,
@@ -1149,7 +1332,6 @@ export class Jewellery3DRenderer {
     this._updateHeadOccluder(
       anchors, visibleW, visibleH, isMirrored, effectiveYaw, anchors.pitch, effectiveRoll
     );
-    this._updateSegmentationUniforms(trackingData, isMirrored);
 
     // ── 2. 3D torso rotations with biomechanical perspective coupling ──
     // Smooth biomechanical neck & torso yaw:
