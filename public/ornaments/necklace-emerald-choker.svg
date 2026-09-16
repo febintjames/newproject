@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
+  <defs>
+    <linearGradient id="goldChoker" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5C0" />
+      <stop offset="30%" stop-color="#E5C158" />
+      <stop offset="60%" stop-color="#C59B27" />
+      <stop offset="100%" stop-color="#8F6B10" />
+    </linearGradient>
+    <radialGradient id="deepEmerald" cx="35%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#74C69D" />
+      <stop offset="35%" stop-color="#40916C" />
+      <stop offset="70%" stop-color="#1B4332" />
+      <stop offset="100%" stop-color="#081C15" />
+    </radialGradient>
+    <radialGradient id="pearlShine" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#F1F3F5" />
+      <stop offset="100%" stop-color="#DEE2E6" />
+    </radialGradient>
+    <filter id="chokerShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <g filter="url(#chokerShadow)">
+    <!-- Base Ribbon Bands -->
+    <path d="M 125,75 Q 300,165 475,75" fill="none" stroke="url(#goldChoker)" stroke-width="16" stroke-linecap="round" />
+    <path d="M 130,95 Q 300,185 470,95" fill="none" stroke="url(#goldChoker)" stroke-width="8" />
+
+    <!-- Emerald Cushion Cut Plates across choker -->
+    <!-- 1 -->
+    <g transform="translate(160, 88)"><rect x="-9" y="-12" width="18" height="24" rx="3" fill="url(#deepEmerald)" stroke="url(#goldChoker)" stroke-width="2"/><circle cx="0" cy="18" r="4" fill="url(#pearlShine)"/></g>
+    <!-- 2 -->
+    <g transform="translate(195, 102)"><rect x="-10" y="-13" width="20" height="26" rx="3" fill="url(#deepEmerald)" stroke="url(#goldChoker)" stroke-width="2"/><circle cx="0" cy="20" r="4.5" fill="url(#pearlShine)"/></g>
+    <!-- 3 -->
+    <g transform="translate(232, 115)"><rect x="-11" y="-14" width="22" height="28" rx="3" fill="url(#deepEmerald)" stroke="url(#goldChoker)" stroke-width="2"/><circle cx="0" cy="22" r="5" fill="url(#pearlShine)"/></g>
+    <!-- 4 -->
+    <g transform="translate(270, 123)"><rect x="-12" y="-15" width="24" height="30" rx="3" fill="url(#deepEmerald)" stroke="url(#goldChoker)" stroke-width="2.5"/><circle cx="0" cy="24" r="5.5" fill="url(#pearlShine)"/></g>
+    
+    <!-- Grand Center Emerald -->
+    <g transform="translate(300, 126)">
+      <rect x="-15" y="-18" width="30" height="36" rx="4" fill="url(#deepEmerald)" stroke="url(#goldChoker)" stroke-width="3"/>
+      <!-- Inner facet lines -->
+      <rect x="-10" y="-12" width="20" height="24" rx="2" fill="none" stroke="#74C69D" stroke-width="1" opacity="0.6"/>
+      <!-- Hanging Grand Pearl Drop -->
+      <path d="M 0,18 L 0,35" stroke="url(#goldChoker)" stroke-width="3" />
+      <circle cx="0" cy="48" r="9" fill="url(#pearlShine)" stroke="url(#goldChoker)" stroke-width="1.5" />
+    </g>
+
+    <!-- 5 -->
+    <g transform="translate(330, 123)"><rect x="-12" y="-15" width="24" height="30" rx="3" fill="url(#deepEmerald)" stroke="url(#goldChoker)" stroke-width="2.5"/><circle cx="0" cy="24" r="5.5" fill="url(#pearlShine)"/></g>
+    <!-- 6 -->
+    <g transform="translate(368, 115)"><rect x="-11" y="-14" width="22" height="28" rx="3" fill="url(#deepEmerald)" stroke="url(#goldChoker)" stroke-width="2"/><circle cx="0" cy="22" r="5" fill="url(#pearlShine)"/></g>
+    <!-- 7 -->
+    <g transform="translate(405, 102)"><rect x="-10" y="-13" width="20" height="26" rx="3" fill="url(#deepEmerald)" stroke="url(#goldChoker)" stroke-width="2"/><circle cx="0" cy="20" r="4.5" fill="url(#pearlShine)"/></g>
+    <!-- 8 -->
+    <g transform="translate(440, 88)"><rect x="-9" y="-12" width="18" height="24" rx="3" fill="url(#deepEmerald)" stroke="url(#goldChoker)" stroke-width="2"/><circle cx="0" cy="18" r="4" fill="url(#pearlShine)"/></g>
+  </g>
+</svg>

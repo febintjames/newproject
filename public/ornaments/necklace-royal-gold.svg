@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
+  <defs>
+    <!-- Gold Gradients -->
+    <linearGradient id="goldLinear" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF4B8" />
+      <stop offset="25%" stop-color="#FFD700" />
+      <stop offset="50%" stop-color="#D4AF37" />
+      <stop offset="75%" stop-color="#AA771C" />
+      <stop offset="100%" stop-color="#FFDF73" />
+    </linearGradient>
+    <radialGradient id="rubyGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF4D6D" />
+      <stop offset="50%" stop-color="#C9184A" />
+      <stop offset="100%" stop-color="#590D22" />
+    </radialGradient>
+    <radialGradient id="emeraldGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#52B788" />
+      <stop offset="60%" stop-color="#1B4332" />
+      <stop offset="100%" stop-color="#081C15" />
+    </radialGradient>
+    <radialGradient id="pearlGlow" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="60%" stop-color="#F8F9FA" />
+      <stop offset="85%" stop-color="#E9ECEF" />
+      <stop offset="100%" stop-color="#CED4DA" />
+    </radialGradient>
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.4" />
+      <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#FFD700" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <g filter="url(#goldGlow)">
+    <!-- Top Choker Band -->
+    <path d="M 120,70 Q 300,160 480,70" fill="none" stroke="url(#goldLinear)" stroke-width="12" stroke-linecap="round" />
+    <path d="M 130,85 Q 300,175 470,85" fill="none" stroke="url(#goldLinear)" stroke-width="6" />
+
+    <!-- Choker Bead Studs along top band -->
+    <g fill="url(#rubyGlow)" stroke="url(#goldLinear)" stroke-width="1.5">
+      <circle cx="160" cy="84" r="5" />
+      <circle cx="190" cy="97" r="5" />
+      <circle cx="220" cy="108" r="5.5" />
+      <circle cx="255" cy="116" r="6" />
+      <circle cx="300" cy="120" r="7" />
+      <circle cx="345" cy="116" r="6" />
+      <circle cx="380" cy="108" r="5.5" />
+      <circle cx="410" cy="97" r="5" />
+      <circle cx="440" cy="84" r="5" />
+    </g>
+
+    <!-- Mid Layer Arch -->
+    <path d="M 140,110 Q 300,240 460,110" fill="none" stroke="url(#goldLinear)" stroke-width="8" stroke-dasharray="4,6" />
+
+    <!-- Hanging Petals and Medallions -->
+    <!-- Left Wing 1 -->
+    <g transform="translate(190, 140) rotate(-22)">
+      <path d="M 0,0 L 8,24 L 0,38 L -8,24 Z" fill="url(#goldLinear)" />
+      <circle cx="0" cy="18" r="4" fill="url(#emeraldGlow)" />
+      <circle cx="0" cy="45" r="5" fill="url(#pearlGlow)" />
+    </g>
+    <!-- Left Wing 2 -->
+    <g transform="translate(230, 160) rotate(-14)">
+      <path d="M 0,0 L 10,30 L 0,48 L -10,30 Z" fill="url(#goldLinear)" />
+      <circle cx="0" cy="22" r="5" fill="url(#rubyGlow)" />
+      <circle cx="0" cy="56" r="6" fill="url(#pearlGlow)" />
+    </g>
+    <!-- Left Wing 3 -->
+    <g transform="translate(265, 175) rotate(-6)">
+      <path d="M 0,0 L 12,36 L 0,58 L -12,36 Z" fill="url(#goldLinear)" />
+      <circle cx="0" cy="26" r="6" fill="url(#emeraldGlow)" />
+      <circle cx="0" cy="68" r="7" fill="url(#pearlGlow)" />
+    </g>
+
+    <!-- Center Royal Pendant -->
+    <g transform="translate(300, 185)">
+      <!-- Intricate Pendant Backing -->
+      <path d="M 0,0 Q -30,40 -20,80 Q 0,110 0,130 Q 0,110 20,80 Q 30,40 0,0 Z" fill="url(#goldLinear)" stroke="#AA771C" stroke-width="2" />
+      <!-- Center Royal Gem -->
+      <path d="M 0,35 L 16,60 L 0,85 L -16,60 Z" fill="url(#rubyGlow)" stroke="#FFD700" stroke-width="2" />
+      <circle cx="0" cy="60" r="6" fill="#FFF4B8" opacity="0.8" />
+      <!-- Surrounding Pearl halo -->
+      <circle cx="-16" cy="40" r="3.5" fill="url(#pearlGlow)" />
+      <circle cx="16" cy="40" r="3.5" fill="url(#pearlGlow)" />
+      <circle cx="-22" cy="65" r="3.5" fill="url(#pearlGlow)" />
+      <circle cx="22" cy="65" r="3.5" fill="url(#pearlGlow)" />
+      <circle cx="-14" cy="90" r="3.5" fill="url(#pearlGlow)" />
+      <circle cx="14" cy="90" r="3.5" fill="url(#pearlGlow)" />
+      <!-- Bottom Hanging Pearl -->
+      <path d="M 0,130 L 0,140" stroke="url(#goldLinear)" stroke-width="3" />
+      <circle cx="0" cy="150" r="9" fill="url(#pearlGlow)" stroke="url(#goldLinear)" stroke-width="1.5" />
+    </g>
+
+    <!-- Right Wing 3 -->
+    <g transform="translate(335, 175) rotate(6)">
+      <path d="M 0,0 L 12,36 L 0,58 L -12,36 Z" fill="url(#goldLinear)" />
+      <circle cx="0" cy="26" r="6" fill="url(#emeraldGlow)" />
+      <circle cx="0" cy="68" r="7" fill="url(#pearlGlow)" />
+    </g>
+    <!-- Right Wing 2 -->
+    <g transform="translate(370, 160) rotate(14)">
+      <path d="M 0,0 L 10,30 L 0,48 L -10,30 Z" fill="url(#goldLinear)" />
+      <circle cx="0" cy="22" r="5" fill="url(#rubyGlow)" />
+      <circle cx="0" cy="56" r="6" fill="url(#pearlGlow)" />
+    </g>
+    <!-- Right Wing 1 -->
+    <g transform="translate(410, 140) rotate(22)">
+      <path d="M 0,0 L 8,24 L 0,38 L -8,24 Z" fill="url(#goldLinear)" />
+      <circle cx="0" cy="18" r="4" fill="url(#emeraldGlow)" />
+      <circle cx="0" cy="45" r="5" fill="url(#pearlGlow)" />
+    </g>
+  </g>
+</svg>

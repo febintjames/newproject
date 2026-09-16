@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aura Luxe | Real-Time Virtual Jewellery Try-On</title>
+  <link rel="icon" type="image/svg+xml" href="/ornaments/necklace-royal-gold.svg" />
+  <link rel="stylesheet" href="/src/style.css" />
+
+  <!-- Google MediaPipe Face Mesh via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+  <!-- Google MediaPipe Pose via CDN — provides shoulder/hip/ear body landmarks -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.min.js" crossorigin="anonymous"></script>
+  <!-- Selfie segmentation — soft neck/torso boundary for live compositing -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-logo">
+        <span>✧</span> AURA LUXE
+      </div>
+      <span class="brand-badge">Real-Time VTON</span>
+    </div>
+
+    <div class="status-pills">
+      <div class="pill">
+        <span id="faceStatusDot" class="pill-dot"></span>
+        <span id="faceStatusText">Initializing...</span>
+      </div>
+      <div class="pill" id="fpsCounterPill">
+        <span>FPS:</span>
+        <strong id="fpsVal">--</strong>
+      </div>
+      <div class="pill" id="gpuPill" title="Detected WebGL GPU Hardware">
+        <span style="color: #10b981;">⚡ GPU:</span>
+        <strong id="gpuVal" style="color: #6ee7b7; font-size: 11px;">Detecting...</strong>
+      </div>
+      <div class="pill" id="poseStatusPill" title="MediaPipe Pose Body Tracking">
+        <span id="poseStatusDot" class="pill-dot"></span>
+        <span id="poseStatusText" style="font-size: 11px;">Pose: Loading...</span>
+      </div>
+      <div class="pill" id="modePill" style="cursor: pointer;" title="Click to toggle between Client 60FPS and Decart Cloud Generative">
+        <span style="color: var(--gold-primary);">Mode:</span>
+        <span id="activeModeText">Local 60fps</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button id="headerUploadVideoBtn" class="btn-ghost" style="color: var(--gold-light); border-color: var(--gold-primary); font-weight: 500;" title="Upload Video for Virtual Try-On">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        <span>Upload Video</span>
+      </button>
+      <button id="headerUploadPhotoBtn" class="btn-ghost" style="color: var(--text-primary);" title="Upload Photo / Selfie">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+        <span>Upload Photo</span>
+      </button>
+      <button id="headerWebcamBtn" class="btn-ghost" title="Switch to Live Webcam Mirror">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Webcam</span>
+      </button>
+      <button id="toggleTuningBtn" class="btn-icon" title="Fine-Tune Scale & Position">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" x2="20" y1="21" y2="21"/><line x1="4" x2="20" y1="3" y2="3"/><line x1="4" x2="20" y1="12" y2="12"/><circle cx="8" cy="12" r="3"/><circle cx="16" cy="3" r="3"/><circle cx="12" cy="21" r="3"/></svg>
+      </button>
+      <button id="snapshotBtn" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Capture</span>
+      </button>
+      <button id="headerStudioBtn" class="btn-primary" style="background: linear-gradient(135deg, #e5a93b, #c27d0c); color: #000; font-weight: 700; border: none; box-shadow: 0 0 16px rgba(229,169,59,0.35);" title="Generate Studio-Grade Photorealistic Try-On with Perfect Corp YouCam Cloud AI">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span>✨ Studio AI</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Viewport -->
+  <main class="main-stage">
+    <div class="viewport-container">
+      <video id="webcamVideo" playsinline autoplay muted></video>
+      <img id="photoPreviewImg" alt="User portrait" style="display: none; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" />
+      <canvas id="tryonCanvas" width="1280" height="720"></canvas>
+
+      <!-- Viewport HUD Overlay -->
+      <div class="viewport-hud">
+        <div class="hud-group">
+          <div class="hud-badge" id="cameraNotice">
+            <span id="cameraNoticeText">Mirror Active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden File Inputs for Photo & Video Upload Try-On -->
+      <input type="file" id="photoUploadInput" accept="image/*" style="display: none;" />
+      <input type="file" id="videoUploadInput" accept="video/mp4,video/webm,video/quicktime,video/avi" style="display: none;" />
+
+      <!-- Video Playback HUD Controller (Visible in Video Mode) -->
+      <div id="videoControlsBar" style="display: none; position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(10,12,18,0.88); backdrop-filter: blur(10px); padding: 6px 16px; border-radius: 30px; border: 1px solid var(--gold-primary); align-items: center; gap: 12px; z-index: 40; box-shadow: 0 8px 32px rgba(0,0,0,0.6);">
+        <button id="videoPlayPauseBtn" style="background: none; border: none; color: var(--gold-light); cursor: pointer; font-size: 16px;">⏸</button>
+        <input type="range" id="videoSeekBar" min="0" max="100" value="0" style="width: 160px; accent-color: var(--gold-primary); cursor: pointer;" />
+        <span id="videoTimeText" style="font-size: 11px; font-family: monospace; color: #fff;">00:00</span>
+        <button id="exportAiVideoBtn" class="btn-primary" style="padding: 4px 10px; font-size: 11px; border-radius: 14px;" title="Render and download full video using Python AI Try-On Engine">
+          ✦ Export AI Video
+        </button>
+      </div>
+
+      <!-- Initial Welcome / Start Camera Overlay -->
+      <div id="startCameraOverlay" class="camera-welcome-overlay">
+        <div class="welcome-badge">✧ AURA LUXE VIRTUAL MIRROR ✧</div>
+        <h2>Real-Time Jewellery Try-On</h2>
+        <p>Try on royal necklaces, chokers, and chandelier earrings live on your camera, photo, or uploaded video.</p>
+        <div class="welcome-actions">
+          <button id="uploadVideoBtn" class="btn-primary" style="justify-content: center; padding: 12px 20px; font-size: 14px; background: linear-gradient(135deg, #b8860b, #d4af37); color: #000; font-weight: bold;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            <span>Upload Video Try-On</span>
+          </button>
+          <button id="uploadSelfieBtn" class="btn-ghost" style="justify-content: center; border-color: var(--gold-primary); color: var(--gold-light);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+            <span>Upload Photo / Selfie</span>
+          </button>
+          <button id="activateWebcamBtn" class="btn-ghost" style="justify-content: center; font-size: 13px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span>Enable Webcam Mirror</span>
+          </button>
+          <button id="welcomeStudioBtn" class="btn-primary" style="justify-content: center; background: linear-gradient(135deg, #e5a93b, #c27d0c); color: #000; font-weight: 700; border: none; box-shadow: 0 4px 14px rgba(229,169,59,0.3);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span>✨ Studio AI Try-On (YouCam)</span>
+          </button>
+          <button id="startDemoModeBtn" class="btn-ghost" style="justify-content: center; font-size: 12px; color: var(--text-secondary);">
+            ✦ Interactive Demo Simulation
+          </button>
+        </div>
+        <div id="permissionNotice" style="display: none; font-size: 12px; color: var(--gold-light); margin-top: 4px;">
+          👆 Please select <strong>"Allow"</strong> when your browser prompts for camera access
+        </div>
+      </div>
+
+      <!-- Camera Error Prompt Overlay -->
+      <div id="cameraErrorCard" class="camera-error-overlay" style="display: none;">
+        <div class="error-icon">📷</div>
+        <h3 id="cameraErrorTitle">Camera Access Needed</h3>
+        <p id="cameraErrorMessage">Please allow camera access or upload a video or photo to try on jewellery.</p>
+        <div class="error-actions">
+          <button id="errorUploadVideoBtn" class="btn-primary" style="background: linear-gradient(135deg, #b8860b, #d4af37); color: #000; font-weight: bold;">
+            🎬 Upload Video Try-On
+          </button>
+          <button id="errorUploadSelfieBtn" class="btn-ghost" style="color: var(--gold-light); border-color: var(--gold-primary);">
+            📷 Upload Photo / Selfie
+          </button>
+          <button id="retryCameraBtn" class="btn-ghost">Retry Camera</button>
+          <button id="launchDemoModeBtn" class="btn-ghost" style="font-size: 12px;">
+            ✦ Interactive Demo Simulation
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Wearing Indicator Tag -->
+      <div id="activeItemTag" class="active-item-tag" style="display: none;">
+        <img id="activeTagImg" src="" alt="Active Item" />
+        <div class="active-tag-info">
+          <h4 id="activeTagTitle">Royalty Gold</h4>
+          <p id="activeTagMeta">22K Gold • $4,850</p>
+        </div>
+      </div>
+
+      <!-- Floating Fine-Tuning Drawer -->
+      <div id="tuningPanel" class="tuning-panel hidden">
+        <h4 style="font-weight: 600; color: var(--gold-light); margin-bottom: 4px;">Jewellery Adjust</h4>
+        <div class="tuning-row">
+          <label>Scale: <span id="scaleVal">1.0x</span></label>
+          <input type="range" id="scaleSlider" min="0.7" max="1.4" step="0.05" value="1.0" />
+        </div>
+        <div class="tuning-row">
+          <label>Vertical Drop: <span id="offsetVal">0px</span></label>
+          <input type="range" id="offsetSlider" min="-40" max="80" step="2" value="0" />
+        </div>
+        <button id="resetTuningBtn" class="btn-ghost" style="padding: 4px; font-size: 11px;">Reset</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom Ornament Dock & Carousel -->
+  <footer class="ornament-dock">
+    <div class="dock-header">
+      <div class="category-tabs">
+        <button class="tab-btn active" data-category="all">All Pieces</button>
+        <button class="tab-btn" data-category="necklace">Necklaces</button>
+        <button class="tab-btn" data-category="earrings">Earrings</button>
+        <button class="tab-btn" data-category="set">Bridal Sets</button>
+      </div>
+      <div class="dock-actions">
+        <input type="file" id="customOrnamentUploadInput" accept="image/*,.glb,.gltf" style="display: none;" />
+        <button id="uploadCustomOrnamentBtn" class="btn-ghost" style="color: var(--gold-light); border-color: var(--gold-primary); font-size: 12px;" title="Upload any necklace photo or 3D model (.glb) to try on">
+          ✦ Upload Ornament / 3D Model
+        </button>
+        <button id="clearTryonBtn" class="btn-ghost" title="Remove all worn jewellery">
+          ✕ Remove All
+        </button>
+      </div>
+    </div>
+
+    <!-- Horizontal Cards Scroller -->
+    <div class="cards-scroller" id="ornamentCardsContainer">
+      <!-- Injected via main.js -->
+    </div>
+  </footer>
+
+  <!-- Decart Lucy 2 / Fal.ai Settings Modal -->
+  <div id="settingsModal" class="modal-backdrop hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Decart Lucy 2 Integration</h3>
+        <button id="closeSettingsBtn" class="btn-icon" style="width: 28px; height: 28px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>You can toggle between the <strong>Local MediaPipe Engine (60 FPS, Zero Latency)</strong> and <strong>Decart Lucy 2 VTON Cloud Generative Stream</strong>.</p>
+        <div style="margin-top: 12px;">
+          <label style="font-weight: 500; color: var(--gold-light);">Decart / Fal.ai API Key:</label>
+          <input type="text" id="decartApiKeyInput" placeholder="sk_decart_live_..." />
+        </div>
+        <p style="font-size: 11px; margin-top: 8px; color: var(--text-secondary);">
+          Tip: In absence of a Decart API key, the local 60 FPS real-time tracker runs automatically with zero configuration.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="saveApiKeyBtn" class="btn-primary">Save & Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Snapshot Preview Modal -->
+  <div id="snapshotModal" class="modal-backdrop hidden">
+    <div class="modal-box" style="max-width: 640px;">
+      <div class="modal-header">
+        <h3>Your High-Jewellery Portrait</h3>
+        <button id="closeSnapshotBtn" class="btn-icon" style="width: 28px; height: 28px;">✕</button>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        <img id="snapshotImgPreview" style="width: 100%; border-radius: 8px; border: 1px solid var(--border-subtle);" src="" alt="Snapshot" />
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <button id="snapshotEnhanceBtn" class="btn-primary" style="background: linear-gradient(135deg, #e5a93b, #c27d0c); color: #000; font-weight: 700; border: none; box-shadow: 0 0 14px rgba(229,169,59,0.35);">
+          <span>✨ Upgrade with YouCam AI</span>
+        </button>
+        <a id="downloadSnapshotLink" class="btn-ghost" style="color: var(--text-primary); border-color: var(--border-subtle);" download="aura-luxe-tryon.png">
+          Download Canvas Snapshot
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Studio AI (YouCam Cloud) Modal -->
+  <div id="studioModal" class="modal-backdrop hidden">
+    <div class="modal-box" style="max-width: 840px; width: 95%;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px;">✨</span>
+          <div>
+            <h3 style="margin: 0; font-family: Cinzel, serif; font-size: 18px; color: var(--gold-light);">Studio Photoreal Try-On</h3>
+            <span style="font-size: 11px; color: var(--text-secondary);">Powered by Perfect Corp (YouCam) Commercial S2S AI</span>
+          </div>
+        </div>
+        <button id="closeStudioBtn" class="btn-icon" style="width: 28px; height: 28px;">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 16px 0;">
+        <!-- Loading Spinner State -->
+        <div id="studioLoadingState" style="display: none; text-align: center; padding: 48px 20px;">
+          <div style="width: 48px; height: 48px; border: 3px solid rgba(212,175,55,0.2); border-top-color: var(--gold-primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+          <h4 style="color: var(--gold-light); margin-bottom: 8px; font-size: 16px;">Synthesizing Photorealistic Fit...</h4>
+          <p id="studioLoadingStatus" style="font-size: 13px; color: var(--text-secondary); max-width: 420px; margin: 0 auto; line-height: 1.6;">
+            Uploading portrait & ornament to Perfect Corp AI cloud...
+          </p>
+        </div>
+
+        <!-- Content Layout State -->
+        <div id="studioContentState">
+          <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 20px; align-items: start;">
+            <!-- Left: Viewport Preview -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="background: #000; border-radius: 10px; border: 1px solid var(--border-subtle); overflow: hidden; position: relative; min-height: 380px; display: flex; align-items: center; justify-content: center;">
+                <input type="file" id="studioPhotoInput" accept="image/*" style="display: none;" />
+                <img id="studioSourceImg" style="width: 100%; height: auto; max-height: 460px; object-fit: contain;" alt="Source Portrait" />
+                <img id="studioResultImg" style="width: 100%; height: auto; max-height: 460px; object-fit: contain; display: none;" alt="Studio Try-On Result" />
+                <div id="studioBadge" style="display: none; position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.8); border: 1px solid var(--gold-primary); color: var(--gold-light); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; backdrop-filter: blur(8px); box-shadow: 0 2px 8px rgba(0,0,0,0.6);">
+                  ✦ Perfect Corp AI 4K
+                </div>
+                <button id="studioChangePhotoBtn" class="btn-ghost" style="position: absolute; bottom: 12px; background: rgba(10,14,22,0.85); backdrop-filter: blur(8px); border-color: var(--gold-primary); color: var(--gold-light); font-size: 11px; padding: 5px 12px; border-radius: 16px; cursor: pointer;">
+                  📷 Upload / Change Portrait
+                </button>
+              </div>
+
+              <!-- Sample Models & Guidance -->
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                <span style="font-size: 11px; color: var(--text-secondary);">Sample Models:</span>
+                <div style="display: flex; gap: 6px;">
+                  <button id="sampleModel1Btn" class="btn-ghost" style="padding: 2px 8px; font-size: 11px; border-radius: 12px; color: var(--gold-light); border-color: var(--border-subtle);">Indian Model</button>
+                  <button id="sampleModel2Btn" class="btn-ghost" style="padding: 2px 8px; font-size: 11px; border-radius: 12px; color: var(--gold-light); border-color: var(--border-subtle);">Studio Model</button>
+                </div>
+              </div>
+
+              <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; padding: 0 4px;">
+                💡 <em>Note: Perfect Corp AI requires a portrait showing both your face & neck so its neural engine can accurately align collarbones and drape the necklace.</em>
+              </div>
+            </div>
+
+            <!-- Right: Settings & Details -->
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <!-- Selected Ornament -->
+              <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 12px; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 12px; font-weight: 600; color: var(--gold-light); margin-bottom: 8px;">Ornament to Fit</div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <img id="studioNecklaceThumb" style="width: 52px; height: 52px; object-fit: contain; background: rgba(0,0,0,0.5); border-radius: 6px; border: 1px solid var(--border-subtle);" src="" alt="Selected Necklace" />
+                  <div>
+                    <div id="studioNecklaceName" style="font-weight: 600; font-size: 14px; color: #fff;">Choker Necklace</div>
+                    <div id="studioNecklaceMeta" style="font-size: 11px; color: var(--text-secondary);">Commercial 2D VTO</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tuning Sliders -->
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                    <span style="color: var(--text-secondary);">Shadow Intensity</span>
+                    <span id="studioShadowVal" style="color: var(--gold-light); font-family: monospace;">50%</span>
+                  </div>
+                  <input type="range" id="studioShadowSlider" min="0" max="100" value="50" style="width: 100%; accent-color: var(--gold-primary);" />
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                    <span style="color: var(--text-secondary);">Ambient Light Intensity</span>
+                    <span id="studioAmbientVal" style="color: var(--gold-light); font-family: monospace;">50%</span>
+                  </div>
+                  <input type="range" id="studioAmbientSlider" min="0" max="100" value="50" style="width: 100%; accent-color: var(--gold-primary);" />
+                </div>
+
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); cursor: pointer;">
+                  <input type="checkbox" id="studioRemoveBgCheck" checked style="accent-color: var(--gold-primary);" />
+                  <span>Auto-isolate ornament background</span>
+                </label>
+              </div>
+
+              <!-- Actions -->
+              <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+                <button id="runStudioTryonBtn" class="btn-primary" style="justify-content: center; padding: 12px; font-size: 14px; background: linear-gradient(135deg, #e5a93b, #c27d0c); color: #000; font-weight: 700; border: none; box-shadow: 0 4px 14px rgba(229,169,59,0.35);">
+                  ✦ Generate Studio AI Try-On
+                </button>
+                <button id="toggleComparisonBtn" class="btn-ghost" style="display: none; justify-content: center; padding: 8px; font-size: 12px; color: var(--gold-light); border-color: var(--border-subtle);">
+                  👁 Toggle Original / AI View
+                </button>
+                <a id="downloadStudioBtn" class="btn-ghost" style="display: none; justify-content: center; text-align: center; border-color: var(--gold-primary); color: var(--gold-light); padding: 10px; font-weight: 600;" download="studio-tryon.png">
+                  ⬇ Download 4K Result
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

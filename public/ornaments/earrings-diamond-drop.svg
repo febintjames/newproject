@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 260" width="140" height="260">
+  <defs>
+    <linearGradient id="platSilver" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#D5D8DC" />
+      <stop offset="100%" stop-color="#808B96" />
+    </linearGradient>
+    <radialGradient id="gemBrilliant" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="40%" stop-color="#EBF5FB" />
+      <stop offset="80%" stop-color="#AED6F1" />
+      <stop offset="100%" stop-color="#3498DB" />
+    </radialGradient>
+    <filter id="diamondShimmer" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <g filter="url(#diamondShimmer)">
+    <!-- Top Earlobe Cluster (Anchor 70, 20) -->
+    <g transform="translate(70, 20)">
+      <!-- Main Stud Diamond -->
+      <polygon points="0,-12 12,0 0,12 -12,0" fill="url(#gemBrilliant)" stroke="url(#platSilver)" stroke-width="1.5" />
+      <circle cx="-3" cy="-3" r="3" fill="#FFF" />
+      <!-- Small flanking marquis diamonds -->
+      <polygon points="-16,-4 -22,0 -16,4 -10,0" fill="#FFF" stroke="url(#platSilver)" stroke-width="1" />
+      <polygon points="16,-4 22,0 16,4 10,0" fill="#FFF" stroke="url(#platSilver)" stroke-width="1" />
+    </g>
+
+    <!-- Articulated Links -->
+    <path d="M 70,32 L 70,55" stroke="url(#platSilver)" stroke-width="2.5" />
+    
+    <!-- Mid Tier Diamond Cluster -->
+    <g transform="translate(70, 70)">
+      <circle cx="0" cy="0" r="10" fill="url(#gemBrilliant)" stroke="url(#platSilver)" stroke-width="1.5" />
+      <polygon points="0,-7 7,0 0,7 -7,0" fill="#FFF" opacity="0.6"/>
+      <!-- Halo stones -->
+      <circle cx="-13" cy="0" r="3" fill="#FFF" stroke="url(#platSilver)" stroke-width="0.5" />
+      <circle cx="13" cy="0" r="3" fill="#FFF" stroke="url(#platSilver)" stroke-width="0.5" />
+      <circle cx="-9" cy="-9" r="3" fill="#FFF" stroke="url(#platSilver)" stroke-width="0.5" />
+      <circle cx="9" cy="-9" r="3" fill="#FFF" stroke="url(#platSilver)" stroke-width="0.5" />
+      <circle cx="-9" cy="9" r="3" fill="#FFF" stroke="url(#platSilver)" stroke-width="0.5" />
+      <circle cx="9" cy="9" r="3" fill="#FFF" stroke="url(#platSilver)" stroke-width="0.5" />
+    </g>
+
+    <path d="M 70,85 L 70,110" stroke="url(#platSilver)" stroke-width="2.5" />
+
+    <!-- Grand Pear Teardrop Solitaire Drop -->
+    <g transform="translate(70, 150)">
+      <path d="M 0,-35 C 25,-5 32,22 0,42 C -32,22 -25,-5 0,-35 Z" fill="url(#gemBrilliant)" stroke="url(#platSilver)" stroke-width="2.5" />
+      <!-- Facet details -->
+      <path d="M 0,-24 C 18,-2 22,16 0,30 C -22,16 -18,-2 0,-24 Z" fill="#FFFFFF" opacity="0.6" />
+      <circle cx="-4" cy="-5" r="5" fill="#FFFFFF" />
+      <!-- Star glint -->
+      <polygon points="0,-12 3,-3 12,0 3,3 0,12 -3,3 -12,0 -3,-3" fill="#FFFFFF" opacity="0.95" />
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 260" width="160" height="260">
+  <defs>
+    <linearGradient id="goldEarring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5B8" />
+      <stop offset="30%" stop-color="#FFD700" />
+      <stop offset="65%" stop-color="#C59B27" />
+      <stop offset="100%" stop-color="#7B5606" />
+    </linearGradient>
+    <radialGradient id="jhumkaRuby" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF4D6D" />
+      <stop offset="60%" stop-color="#C9184A" />
+      <stop offset="100%" stop-color="#590D22" />
+    </radialGradient>
+    <radialGradient id="jhumkaPearl" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#E9ECEF" />
+      <stop offset="100%" stop-color="#ADB5BD" />
+    </radialGradient>
+    <filter id="earringGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <g filter="url(#earringGlow)">
+    <!-- Earlobe Stud (Top Anchor at 80, 25) -->
+    <g transform="translate(80, 25)">
+      <!-- Outer Petal Ring -->
+      <circle cx="0" cy="0" r="18" fill="url(#goldEarring)" stroke="#8F6B10" stroke-width="1.5" />
+      <!-- Center Ruby -->
+      <circle cx="0" cy="0" r="10" fill="url(#jhumkaRuby)" stroke="#FFD700" stroke-width="1.5" />
+      <circle cx="-3" cy="-3" r="3" fill="#FFF" opacity="0.7" />
+      <!-- Tiny pearls around stud -->
+      <circle cx="-16" cy="0" r="2.5" fill="url(#jhumkaPearl)" />
+      <circle cx="16" cy="0" r="2.5" fill="url(#jhumkaPearl)" />
+      <circle cx="0" cy="-16" r="2.5" fill="url(#jhumkaPearl)" />
+      <circle cx="0" cy="16" r="2.5" fill="url(#jhumkaPearl)" />
+      <circle cx="-11" cy="-11" r="2.5" fill="url(#jhumkaPearl)" />
+      <circle cx="11" cy="-11" r="2.5" fill="url(#jhumkaPearl)" />
+      <circle cx="-11" cy="11" r="2.5" fill="url(#jhumkaPearl)" />
+      <circle cx="11" cy="11" r="2.5" fill="url(#jhumkaPearl)" />
+    </g>
+
+    <!-- Connecting Loop -->
+    <path d="M 80,43 L 80,60" stroke="url(#goldEarring)" stroke-width="4" stroke-linecap="round" />
+    <circle cx="80" cy="52" r="4" fill="url(#jhumkaRuby)" />
+
+    <!-- Jhumka Bell (Dome) -->
+    <g transform="translate(80, 60)">
+      <!-- Upper dome cap -->
+      <path d="M -40,45 C -40,0 40,0 40,45 Z" fill="url(#goldEarring)" stroke="#8F6B10" stroke-width="2" />
+      <!-- Dome filigree patterns -->
+      <path d="M -30,35 Q 0,15 30,35" fill="none" stroke="#FFF4B8" stroke-width="2" opacity="0.8" />
+      <path d="M -22,22 Q 0,5 22,22" fill="none" stroke="#FFF4B8" stroke-width="2" opacity="0.8" />
+      <!-- Dome base rim -->
+      <ellipse cx="0" cy="45" rx="40" ry="10" fill="url(#goldEarring)" stroke="#664603" stroke-width="1.5" />
+      
+      <!-- Hanging Pearl Beads from Rim -->
+      <g fill="url(#jhumkaPearl)" stroke="url(#goldEarring)" stroke-width="1">
+        <!-- 1 -->
+        <line x1="-36" y1="46" x2="-36" y2="58" stroke="url(#goldEarring)" stroke-width="2" />
+        <circle cx="-36" cy="63" r="4" />
+        <!-- 2 -->
+        <line x1="-24" y1="51" x2="-24" y2="65" stroke="url(#goldEarring)" stroke-width="2" />
+        <circle cx="-24" cy="70" r="4.5" />
+        <!-- 3 -->
+        <line x1="-12" y1="54" x2="-12" y2="70" stroke="url(#goldEarring)" stroke-width="2" />
+        <circle cx="-12" cy="76" r="5" />
+        <!-- 4 Center longest drop -->
+        <line x1="0" y1="55" x2="0" y2="78" stroke="url(#goldEarring)" stroke-width="2.5" />
+        <circle cx="0" cy="72" r="3.5" fill="url(#jhumkaRuby)" />
+        <circle cx="0" cy="86" r="6" />
+        <!-- 5 -->
+        <line x1="12" y1="54" x2="12" y2="70" stroke="url(#goldEarring)" stroke-width="2" />
+        <circle cx="12" cy="76" r="5" />
+        <!-- 6 -->
+        <line x1="24" y1="51" x2="24" y2="65" stroke="url(#goldEarring)" stroke-width="2" />
+        <circle cx="24" cy="70" r="4.5" />
+        <!-- 7 -->
+        <line x1="36" y1="46" x2="36" y2="58" stroke="url(#goldEarring)" stroke-width="2" />
+        <circle cx="36" cy="63" r="4" />
+      </g>
+    </g>
+  </g>
+</svg>

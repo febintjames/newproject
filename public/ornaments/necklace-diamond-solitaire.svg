@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450">
+  <defs>
+    <linearGradient id="diamondWhite" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="35%" stop-color="#E8F4F8" />
+      <stop offset="70%" stop-color="#CBE3FB" />
+      <stop offset="100%" stop-color="#FFFFFF" />
+    </linearGradient>
+    <linearGradient id="platinum" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="40%" stop-color="#D6DBDF" />
+      <stop offset="70%" stop-color="#ABB2B9" />
+      <stop offset="100%" stop-color="#EAECEE" />
+    </linearGradient>
+    <radialGradient id="sparkleReflect" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="40%" stop-color="#E1F5FE" />
+      <stop offset="80%" stop-color="#81D4FA" />
+      <stop offset="100%" stop-color="#0288D1" />
+    </radialGradient>
+    <filter id="diamondShine" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000000" flood-opacity="0.35" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#diamondShine)">
+    <!-- Platinum Setting Track -->
+    <path d="M 130,90 Q 300,210 470,90" fill="none" stroke="url(#platinum)" stroke-width="4" stroke-linecap="round" />
+
+    <!-- Diamond Rivière Graduated Stones -->
+    <!-- Far Left -->
+    <g transform="translate(145, 96)"><polygon points="0,-4 4,0 0,4 -4,0" fill="url(#diamondWhite)" stroke="url(#platinum)" stroke-width="1"/><circle cx="-1" cy="-1" r="1.5" fill="#FFF"/></g>
+    <g transform="translate(170, 107)"><polygon points="0,-5 5,0 0,5 -5,0" fill="url(#diamondWhite)" stroke="url(#platinum)" stroke-width="1"/><circle cx="-1.5" cy="-1.5" r="2" fill="#FFF"/></g>
+    <g transform="translate(198, 121)"><polygon points="0,-6 6,0 0,6 -6,0" fill="url(#diamondWhite)" stroke="url(#platinum)" stroke-width="1"/><circle cx="-2" cy="-2" r="2" fill="#FFF"/></g>
+    <g transform="translate(228, 137)"><polygon points="0,-7 7,0 0,7 -7,0" fill="url(#diamondWhite)" stroke="url(#platinum)" stroke-width="1.2"/><circle cx="-2" cy="-2" r="2.5" fill="#FFF"/></g>
+    <g transform="translate(262, 153)"><polygon points="0,-8 8,0 0,8 -8,0" fill="url(#diamondWhite)" stroke="url(#platinum)" stroke-width="1.2"/><circle cx="-2.5" cy="-2.5" r="3" fill="#FFF"/></g>
+
+    <!-- Centerpiece Solitaire Drop -->
+    <g transform="translate(300, 160)">
+      <!-- Main Center Round Brilliant -->
+      <polygon points="0,-11 11,0 0,11 -11,0" fill="url(#sparkleReflect)" stroke="url(#platinum)" stroke-width="1.5"/>
+      <polygon points="0,-7 7,0 0,7 -7,0" fill="#FFFFFF" opacity="0.6"/>
+      <circle cx="-3" cy="-3" r="3.5" fill="#FFF"/>
+
+      <!-- Hanging Teardrop Solitaire -->
+      <path d="M 0,11 L 0,26" stroke="url(#platinum)" stroke-width="3" />
+      <g transform="translate(0, 48)">
+        <path d="M 0,-22 C 14,-2 18,14 0,26 C -18,14 -14,-2 0,-22 Z" fill="url(#sparkleReflect)" stroke="url(#platinum)" stroke-width="2" />
+        <path d="M 0,-14 C 8,0 10,10 0,18 C -10,10 -8,0 0,-14 Z" fill="#FFFFFF" opacity="0.65" />
+        <circle cx="-2" cy="-4" r="4" fill="#FFFFFF" />
+        <!-- Diamond glint star -->
+        <polygon points="0,-8 2,-2 8,0 2,2 0,8 -2,2 -8,0 -2,-2" fill="#FFFFFF" opacity="0.9" />
+      </g>
+    </g>
+
+    <!-- Far Right -->
+    <g transform="translate(338, 153)"><polygon points="0,-8 8,0 0,8 -8,0" fill="url(#diamondWhite)" stroke="url(#platinum)" stroke-width="1.2"/><circle cx="-2.5" cy="-2.5" r="3" fill="#FFF"/></g>
+    <g transform="translate(372, 137)"><polygon points="0,-7 7,0 0,7 -7,0" fill="url(#diamondWhite)" stroke="url(#platinum)" stroke-width="1.2"/><circle cx="-2" cy="-2" r="2.5" fill="#FFF"/></g>
+    <g transform="translate(402, 121)"><polygon points="0,-6 6,0 0,6 -6,0" fill="url(#diamondWhite)" stroke="url(#platinum)" stroke-width="1"/><circle cx="-2" cy="-2" r="2" fill="#FFF"/></g>
+    <g transform="translate(430, 107)"><polygon points="0,-5 5,0 0,5 -5,0" fill="url(#diamondWhite)" stroke="url(#platinum)" stroke-width="1"/><circle cx="-1.5" cy="-1.5" r="2" fill="#FFF"/></g>
+    <g transform="translate(455, 96)"><polygon points="0,-4 4,0 0,4 -4,0" fill="url(#diamondWhite)" stroke="url(#platinum)" stroke-width="1"/><circle cx="-1" cy="-1" r="1.5" fill="#FFF"/></g>
+  </g>
+</svg>

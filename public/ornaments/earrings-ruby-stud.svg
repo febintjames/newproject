@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="studRuby" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF5D8F" />
+      <stop offset="35%" stop-color="#E50914" />
+      <stop offset="70%" stop-color="#800020" />
+      <stop offset="100%" stop-color="#400010" />
+    </radialGradient>
+    <linearGradient id="studGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5B8" />
+      <stop offset="50%" stop-color="#FFD700" />
+      <stop offset="100%" stop-color="#B8860B" />
+    </linearGradient>
+    <radialGradient id="studDiamond" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="60%" stop-color="#E8F4F8" />
+      <stop offset="100%" stop-color="#B0BEC5" />
+    </radialGradient>
+    <filter id="studShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Anchor at center (60, 60) -->
+  <g filter="url(#studShadow)" transform="translate(60, 60)">
+    <!-- Gold Basket Prongs -->
+    <circle cx="0" cy="0" r="30" fill="url(#studGold)" stroke="#B8860B" stroke-width="1.5" />
+
+    <!-- Diamond Halo (12 stones around) -->
+    <!-- Diamonds rendered at radius 24 -->
+    <circle cx="0" cy="-24" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="12" cy="-21" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="21" cy="-12" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="24" cy="0" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="21" cy="12" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="12" cy="21" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="0" cy="24" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="-12" cy="21" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="-21" cy="12" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="-24" cy="0" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="-21" cy="-12" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+    <circle cx="-12" cy="-21" r="5" fill="url(#studDiamond)" stroke="url(#studGold)" stroke-width="1" />
+
+    <!-- Center Cushion Cut Ruby -->
+    <rect x="-14" y="-14" width="28" height="28" rx="4" fill="url(#studRuby)" stroke="url(#studGold)" stroke-width="2" />
+    <polygon points="0,-10 10,0 0,10 -10,0" fill="#FFF" opacity="0.4" />
+    <circle cx="-4" cy="-4" r="3" fill="#FFF" opacity="0.85" />
+  </g>
+</svg>
