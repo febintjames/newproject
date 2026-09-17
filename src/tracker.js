@@ -55,7 +55,12 @@ export class JewelleryTracker {
 
   getDefaultAnchors() {
     return {
-      neck:         { x: 0.50, y: 0.56, z: 0, neckWidth: 0.26 },
+      neck: {
+        x: 0.50, y: 0.56, z: 0, neckWidth: 0.26, collarWidth: 0.26, neckLength: 0.12,
+        leftCollar: { x: 0.40, y: 0.54 },
+        rightCollar: { x: 0.60, y: 0.54 },
+        chinY: 0.40, clavicleY: 0.62
+      },
       chin:         { x: 0.50, y: 0.40, z: 0 },
       leftEarlobe:  { x: 0.38, y: 0.32, z: 0, visible: true,  alpha: 1.0 },
       rightEarlobe: { x: 0.62, y: 0.32, z: 0, visible: true,  alpha: 1.0 },

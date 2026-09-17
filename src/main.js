@@ -1096,6 +1096,7 @@ class VirtualTryonApp {
             name: file.name.replace(/\.[^/.]+$/, "").slice(0, 20) || "3D Ornament",
             category: "necklace",
             type: "necklace",
+            is3D: true,
             model: modelUrl,
             image: "/ornaments/necklace-royal-gold.svg",
             metal: "3D CAD Mesh",

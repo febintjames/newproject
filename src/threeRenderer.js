@@ -249,18 +249,17 @@ export class Jewellery3DRenderer {
       depthTest: true
     });
 
-    const occGeo = new THREE.CylinderGeometry(36, 42, 96, 28, 1, true);
+    const occGeo = new THREE.CylinderGeometry(38, 44, 88, 28, 1, true);
     this.neckOccluderMesh = new THREE.Mesh(occGeo, this._occluderMat);
-    this.neckOccluderMesh.position.set(0, 0, -18);
+    this.neckOccluderMesh.position.set(0, 4, 0);
     this.neckOccluderMesh.renderOrder = 0;
     this.jewelleryRig.add(this.neckOccluderMesh);
 
-    // Small nape volume only — never covers the front of the necklace
     this.chinOccluderMesh = new THREE.Mesh(
       new THREE.SphereGeometry(1, 16, 12),
       this._occluderMat
     );
-    this.chinOccluderMesh.position.set(0, 8, -28);
+    this.chinOccluderMesh.position.set(0, 28, -8);
     this.chinOccluderMesh.renderOrder = 0;
     this.jewelleryRig.add(this.chinOccluderMesh);
 
@@ -420,36 +419,20 @@ export class Jewellery3DRenderer {
     const segV = 20;
     const positions = [], uvs = [], indices = [];
 
-    // Catalog photos: jewellery lives in roughly the upper 80% of the PNG
-    const activeV = 0.82;
+    const radiusX = 52;
+    const radiusZ = 16;
 
     for (let j = 0; j <= segV; j++) {
       const v = j / segV;
-
-      const y = (0.42 - (v / activeV) * 0.92) * h;
-
-      // Wide wrap at the collar that still stays in front of the nape occluder
-      const arc = (Math.PI * 1.38) * (1.0 - v * 0.22);
-      const startTheta = -arc / 2;
-
-      // Oval neck: wider across the collarbones, flatter toward camera
-      const radiusX = 54 + v * 18;
-      const radiusZ = 32 + v * 10;
-      const zPush = 16 + v * 10;
-
       for (let i = 0; i <= segU; i++) {
         const u = i / segU;
-        const theta = startTheta + u * arc;
+        const t = u * 2 - 1;
 
-        const x = radiusX * Math.sin(theta);
-        const z = radiusZ * Math.cos(theta) + zPush;
+        const x = t * radiusX * (1 + v * 0.08);
+        const z = (1 - t * t) * radiusZ - v * 4;
+        const y = (0.28 - v * 0.72) * h - t * t * (h * 0.16);
 
-        const centerDist = Math.abs(u - 0.5) * 2;
-        const sagY = (v > 0.2)
-          ? -(1 - centerDist * centerDist) * (h * 0.055) * ((v - 0.2) / 0.8)
-          : 0;
-
-        positions.push(x, y + sagY, z);
+        positions.push(x, y, z);
         uvs.push(u, 1.0 - v);
       }
     }
@@ -752,22 +735,29 @@ export class Jewellery3DRenderer {
     this.loadTexture(url);
   }
 
-  // ── Helper: Build 3D CatmullRom neck chain ────────────────────────────────
-  build3DNecklaceChain(material, radiusX = 82, radiusZ = 34, tubeRadius = 1.8, drape = 16) {
-    const arc = Math.PI * 1.15;
-    const startTheta = Math.PI - arc / 2;
+  /**
+   * Collar spline around an oval neck. Front is +Z (camera), nape is -Z
+   * so the occluder can hide the back of the chain.
+   */
+  buildWornNecklacePath(radiusX = 50, radiusZ = 22, drape = 14, arc = Math.PI * 1.15) {
+    const startTheta = -arc / 2;
     const curvePoints = [];
-    for (let i = 0; i <= 36; i++) {
-      const u = i / 36;
+    const steps = 48;
+    for (let i = 0; i <= steps; i++) {
+      const u = i / steps;
       const theta = startTheta + u * arc;
-      const x = -radiusX * Math.sin(theta);
-      const z = -radiusZ * Math.cos(theta);
-      const centerDist = Math.abs(theta - Math.PI);
-      const drapeY = -Math.cos(centerDist * 0.85) * drape;
+      const x = radiusX * Math.sin(theta);
+      const z = radiusZ * Math.cos(theta);
+      const front = Math.max(0, Math.cos(theta));
+      const drapeY = -front * drape;
       curvePoints.push(new THREE.Vector3(x, drapeY, z));
     }
-    const chainPath = new THREE.CatmullRomCurve3(curvePoints);
-    const chainGeo = new THREE.TubeGeometry(chainPath, 52, tubeRadius, 10, false);
+    return new THREE.CatmullRomCurve3(curvePoints);
+  }
+
+  build3DNecklaceChain(material, radiusX = 50, radiusZ = 22, tubeRadius = 2.1, drape = 14) {
+    const chainPath = this.buildWornNecklacePath(radiusX, radiusZ, drape, Math.PI * 1.15);
+    const chainGeo = new THREE.TubeGeometry(chainPath, 64, tubeRadius, 10, false);
     return { mesh: new THREE.Mesh(chainGeo, material), path: chainPath };
   }
 
@@ -807,7 +797,7 @@ export class Jewellery3DRenderer {
       const goldMat = new THREE.MeshStandardMaterial({
         color: 0xD4AF37, roughness: 0.26, metalness: 0.84, envMapIntensity: 1.25
       });
-      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(goldMat, 82, 34, 1.8, 16);
+      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(goldMat, 50, 22, 2.2, 14);
       group.add(chainMesh);
 
       const centerPt = chainPath.getPointAt(0.5);
@@ -848,7 +838,7 @@ export class Jewellery3DRenderer {
       const platMat = new THREE.MeshStandardMaterial({
         color: 0xF0F4F8, roughness: 0.16, metalness: 0.88, envMapIntensity: 1.5
       });
-      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(platMat, 80, 32, 1.5, 14);
+      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(platMat, 50, 22, 1.9, 13);
       group.add(chainMesh);
 
       const centerPt = chainPath.getPointAt(0.5);
@@ -908,7 +898,7 @@ export class Jewellery3DRenderer {
       const goldMat = new THREE.MeshStandardMaterial({
         color: 0xD4AF37, roughness: 0.22, metalness: 0.84, envMapIntensity: 1.3
       });
-      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(goldMat, 80, 32, 1.6, 15);
+      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(goldMat, 50, 22, 2.0, 14);
       group.add(chainMesh);
 
       const centerPt = chainPath.getPointAt(0.5);
@@ -918,9 +908,10 @@ export class Jewellery3DRenderer {
       group.add(bailMesh);
 
       const emGroup = new THREE.Group();
-      emGroup.position.set(centerPt.x, centerPt.y - 20, centerPt.z + 2);
+      emGroup.position.set(centerPt.x, centerPt.y - 16, centerPt.z + 3);
+      emGroup.scale.setScalar(0.55);
+      emGroup.rotation.x = Math.PI / 2;
 
-      // Gold stepped octagonal bezel frame
       const bezelGeo = new THREE.CylinderGeometry(8.8, 8.8, 4.0, 8);
       const bezelMesh = new THREE.Mesh(bezelGeo, goldMat);
       emGroup.add(bezelMesh);
@@ -950,7 +941,7 @@ export class Jewellery3DRenderer {
       const roseGoldMat = new THREE.MeshStandardMaterial({
         color: 0xE8A598, roughness: 0.24, metalness: 0.82, envMapIntensity: 1.35
       });
-      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(roseGoldMat, 80, 32, 1.5, 16);
+      const { mesh: chainMesh, path: chainPath } = this.build3DNecklaceChain(roseGoldMat, 50, 22, 1.9, 14);
       group.add(chainMesh);
 
       const centerPt = chainPath.getPointAt(0.5);
@@ -1006,21 +997,7 @@ export class Jewellery3DRenderer {
         color: 0xF2C654, roughness: 0.20, metalness: 0.88, envMapIntensity: 1.45
       });
 
-      const radiusX = 80;
-      const radiusZ = 34;
-      const arc = Math.PI * 1.20;
-      const startTheta = Math.PI - arc / 2;
-      const curvePoints = [];
-      for (let i = 0; i <= 36; i++) {
-        const u = i / 36;
-        const theta = startTheta + u * arc;
-        const x = -radiusX * Math.sin(theta);
-        const z = -radiusZ * Math.cos(theta);
-        const centerDist = Math.abs(theta - Math.PI);
-        const drapeY = -Math.cos(centerDist * 0.85) * 12;
-        curvePoints.push(new THREE.Vector3(x, drapeY, z));
-      }
-      const chainPath = new THREE.CatmullRomCurve3(curvePoints);
+      const chainPath = this.buildWornNecklacePath(50, 22, 12, Math.PI * 1.15);
 
       // Place 36 interlocking torus links with alternating 42° roll angles
       const numLinks = 36;
@@ -1056,9 +1033,54 @@ export class Jewellery3DRenderer {
       return group;
     }
 
-    // Fallback: custom GLTF or default gold chain
+    // Fallback: uploaded GLTF/GLB, or a default gold collar
+    const modelUrl = neckItem.model || "";
+    const isGltf = /\.glb($|\?)|\.gltf($|\?)/i.test(modelUrl) || modelUrl.startsWith("blob:");
+    if (isGltf) {
+      this.gltfLoader.load(
+        modelUrl,
+        (gltf) => {
+          const scene = gltf.scene;
+          scene.traverse((obj) => {
+            if (obj.isMesh) {
+              obj.castShadow = false;
+              if (obj.material) obj.material.envMap = this.envMap;
+            }
+          });
+          const box = new THREE.Box3().setFromObject(scene);
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+          scene.scale.multiplyScalar(110 / maxDim);
+          const box2 = new THREE.Box3().setFromObject(scene);
+          const center = box2.getCenter(new THREE.Vector3());
+          scene.position.sub(center);
+          group.add(scene);
+
+          const goldMat = new THREE.MeshStandardMaterial({
+            color: 0xD4AF37, roughness: 0.26, metalness: 0.84, envMapIntensity: 1.2
+          });
+          if (this.envMap) goldMat.envMap = this.envMap;
+          const { mesh: chainMesh } = this.build3DNecklaceChain(goldMat, 50, 22, 1.8, 12);
+          group.add(chainMesh);
+
+          this.modelCache.set(key, group);
+          if (onLoaded) onLoaded(group);
+        },
+        undefined,
+        (err) => {
+          console.warn("GLTF load failed:", err);
+          const goldMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, roughness: 0.26, metalness: 0.84 });
+          const { mesh: chainMesh } = this.build3DNecklaceChain(goldMat);
+          group.add(chainMesh);
+          this.modelCache.set(key, group);
+          if (onLoaded) onLoaded(group);
+        }
+      );
+      return group;
+    }
+
     const goldMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, roughness: 0.26, metalness: 0.84 });
-    const { mesh: chainMesh } = this.build3DNecklaceChain(goldMat, 80, 32, 1.8, 14);
+    const { mesh: chainMesh } = this.build3DNecklaceChain(goldMat);
     group.add(chainMesh);
     this.modelCache.set(key, group);
     if (onLoaded) onLoaded(group);
@@ -1205,14 +1227,11 @@ export class Jewellery3DRenderer {
   }
 
   _updateOccluders(anchors, fit, visibleH, neckScaleY, effectiveYaw) {
-    const lengthMul = fit.lengthMul ?? 1.0;
-    const occHeight = Math.max(70, Math.min(110, 90 * lengthMul));
-    this.neckOccluderMesh.scale.set(0.72, occHeight / 96, 0.62);
-    this.neckOccluderMesh.position.set(0, 6, -22);
-
     const jawW = (anchors.neck?.neckWidth ?? anchors.faceWidth * 0.82) / 0.235;
-    this.chinOccluderMesh.position.set(0, 4, -32);
-    this.chinOccluderMesh.scale.set(jawW * 8, jawW * 10, jawW * 6);
+    this.neckOccluderMesh.scale.set(0.7 * Math.min(1.05, jawW), 0.85, 0.45);
+    this.neckOccluderMesh.position.set(0, 6, -12);
+    this.chinOccluderMesh.position.set(0, 14, -16);
+    this.chinOccluderMesh.scale.set(jawW * 5, jawW * 5, jawW * 4);
   }
 
   _updateHeadOccluder(anchors, visibleW, visibleH, isMirrored, effectiveYaw, effectivePitch, effectiveRoll) {
@@ -1298,54 +1317,35 @@ export class Jewellery3DRenderer {
     const normNeckX = isMirrored ? (1 - anchors.neck.x) : anchors.neck.x;
     const neckWorld = normToWorld(normNeckX, anchorNormY);
 
+    const is3D = !!(activeOrnaments && activeOrnaments.necklace && activeOrnaments.necklace.is3D);
+
     const widthMul = fit.widthMul ?? 1.0;
     const lengthMul = fit.lengthMul ?? 1.0;
 
-    const measuredNeckLengthWorld = (anchors.neck && anchors.neck.neckLength)
-      ? (anchors.neck.neckLength * visibleH * lengthMul)
-      : (anchors.faceHeight * 0.35 * visibleH * lengthMul);
-
-    const neckScaleY = Math.max(
-      0.55,
-      (measuredNeckLengthWorld / 100) * this.tuning.scaleMultiplier
-    );
-
-    let measuredNeckRatio = (anchors.neck && anchors.neck.neckWidth)
-      ? (anchors.neck.neckWidth / 0.235)
-      : (anchors.faceWidth / 0.28);
-
+    // Size to the live neck in world units so the collar hugs, not floats
+    const neckWorldW = Math.max(0.14, anchors.neck?.neckWidth || anchors.faceWidth * 0.82) * visibleW;
+    const nativeWidth = 104;
+    let uniform = (neckWorldW / nativeWidth) * this.tuning.scaleMultiplier * widthMul;
     if (anchors.hasPose && anchors.shoulderWidth > 0.08) {
-      const shoulderRatio = (anchors.shoulderWidth * 0.36) / 0.235;
-      measuredNeckRatio = measuredNeckRatio * 0.45 + shoulderRatio * 0.55;
+      const shoulderFit = (anchors.shoulderWidth * visibleW * 0.32) / nativeWidth;
+      uniform = uniform * 0.65 + shoulderFit * this.tuning.scaleMultiplier * widthMul * 0.35;
     }
-
-    const neckScaleX = measuredNeckRatio * this.tuning.scaleMultiplier * 1.18 * widthMul;
-    const neckScaleZ = neckScaleX * 0.88;
-    this.jewelleryRig.scale.set(neckScaleX, neckScaleY, neckScaleZ);
+    uniform = Math.max(0.7, Math.min(1.4, uniform));
+    const scaleY = is3D ? uniform : uniform * Math.max(0.92, Math.min(1.08, lengthMul));
+    this.jewelleryRig.scale.set(uniform, scaleY, uniform);
     this.jewelleryRig.position.set(
       neckWorld.x,
       neckWorld.y - (this.tuning.offsetY * 0.85),
       0
     );
 
-    this._updateOccluders(anchors, fit, visibleH, neckScaleY, effectiveYaw);
-    this._updateHeadOccluder(
-      anchors, visibleW, visibleH, isMirrored, effectiveYaw, anchors.pitch, effectiveRoll
-    );
+    this._updateOccluders(anchors, fit, visibleH, scaleY, effectiveYaw);
+    if (this.headOccluderGroup) this.headOccluderGroup.visible = false;
 
-    // ── 2. 3D torso rotations with biomechanical perspective coupling ──
-    // Smooth biomechanical neck & torso yaw:
-    // When turning to the side, the necklace smoothly turns with the
-    // neck into true 3D perspective so it hugs the side profile of the throat.
     const absYaw = Math.abs(effectiveYaw);
-    const yawFactor = Math.min(0.58, 0.25 + absYaw * 0.32);
+    const yawFactor = Math.min(0.55, 0.22 + absYaw * 0.28);
     const rotY = effectiveYaw * yawFactor;
-
-    // Pitch: collarbones and ribcage remain grounded under gravity;
-    // only a subtle 8% pitch couples to the clavicle so necklace stays resting on the chest.
-    const rotX = -anchors.pitch * 0.08;
-
-    // Roll: gravity keeps necklace draped horizontally
+    const rotX = -0.08 - anchors.pitch * 0.1;
     const rotZ = effectiveRoll * 0.08;
 
     this.jewelleryRig.rotation.set(rotX, rotY, rotZ, "YXZ");
