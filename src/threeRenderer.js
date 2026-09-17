@@ -264,24 +264,40 @@ export class Jewellery3DRenderer {
     this.jewelleryRig.add(this.chinOccluderMesh);
 
     const ribbonGeo = this.buildNecklaceGeometry(850, 850, 100);
+
+    // 9. Soft Ambient Contact Drop Shadow (hugs skin/chest beneath necklace)
     this.necklaceShadowMat = new THREE.MeshBasicMaterial({
       transparent: true,
-      color: 0x120804,
-      opacity: 0.12,
+      color: 0x0c0603,
+      opacity: 0.25,
       blending: THREE.MultiplyBlending,
       depthTest: true,
       depthWrite: false
     });
+    this.necklaceShadowMat.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <alphatest_fragment>",
+        `
+        #include <alphatest_fragment>
+        #ifdef USE_UV
+          // Soft Horizon Alpha Fade (Edge Feathering)
+          float edgeDist = min(vUv.x, 1.0 - vUv.x);
+          float horizonFade = smoothstep(0.005, 0.082, edgeDist);
+          diffuseColor.a *= horizonFade;
+        #endif
+        `
+      );
+    };
     this.necklaceShadowMesh = new THREE.Mesh(ribbonGeo.clone(), this.necklaceShadowMat);
-    this.necklaceShadowMesh.position.set(0, -1, -3);
+    this.necklaceShadowMesh.position.set(0, -2.0, -3.5);
     this.necklaceShadowMesh.renderOrder = 1;
     this.necklaceShadowMesh.visible = false;
     this.jewelleryRig.add(this.necklaceShadowMesh);
 
-    // Photo necklace — keep PBR mild so catalog gold/gems stay visible (not black)
+    // Photo necklace — PBR with Soft Horizon Alpha Fade at the silhouette edges
     this.necklaceMat = new THREE.MeshStandardMaterial({
       transparent: true,
-      alphaTest:   0.08,
+      alphaTest:   0.02,
       side:        THREE.DoubleSide,
       depthTest:   true,
       depthWrite:  false,
@@ -289,6 +305,22 @@ export class Jewellery3DRenderer {
       metalness:   0.12,
       envMapIntensity: 0.85
     });
+    this.necklaceMat.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <alphatest_fragment>",
+        `
+        #include <alphatest_fragment>
+        #ifdef USE_UV
+          // Soft Horizon Alpha Fade: softly dissolves the outer 8.2% of the ribbon
+          // so jewelry wraps seamlessly around the cervical contour with zero hard scissor cuts
+          float edgeDist = min(vUv.x, 1.0 - vUv.x);
+          float horizonFade = smoothstep(0.005, 0.082, edgeDist);
+          diffuseColor.a *= horizonFade;
+        #endif
+        `
+      );
+    };
+
     // Default to generic preset; overridden when an ornament is selected
     this.applyMaterialPreset(this.necklaceMat, "gold");
     this.necklaceMesh = new THREE.Mesh(ribbonGeo, this.necklaceMat);
@@ -419,18 +451,41 @@ export class Jewellery3DRenderer {
     const segV = 20;
     const positions = [], uvs = [], indices = [];
 
+    // Cylindrical anatomical neck geometry:
+    // radiusX: width across collarbones
+    // radiusZ: front-to-back depth of the neck cylinder
     const radiusX = 52;
-    const radiusZ = 16;
+    const radiusZ = 20;
+
+    // Sweeps ~210° (105° on each side) to wrap naturally around to the back
+    const maxTheta = (Math.PI * 1.16) / 2;
 
     for (let j = 0; j <= segV; j++) {
       const v = j / segV;
+      const chestFlare = 1.0 + v * 0.08;
+
       for (let i = 0; i <= segU; i++) {
         const u = i / segU;
-        const t = u * 2 - 1;
+        const t = u * 2.0 - 1.0; // [-1.0, 1.0]
 
-        const x = t * radiusX * (1 + v * 0.08);
-        const z = (1 - t * t) * radiusZ - v * 4;
-        const y = (0.28 - v * 0.72) * h - t * t * (h * 0.16);
+        // ── 1. Cosine Tangent Foreshortening ──
+        // Equal increments along u map to angle theta on the cylinder:
+        // dx/du = Rx * maxTheta * cos(theta).
+        // At the center (theta = 0), cos is 1.0 (gems are full and wide).
+        // At the edges (theta -> 105°), cos drops to ~0.25, naturally compressing
+        // links/pearls into oval, tightly-packed perspective shapes.
+        const theta = t * maxTheta;
+        const sinTheta = Math.sin(theta);
+        const cosTheta = Math.cos(theta);
+
+        const x = radiusX * sinTheta * chestFlare;
+        // z curves backward from 0.0 at center into negative depth behind the neck
+        const z = radiusZ * (cosTheta - 1.0) - v * 4.0;
+
+        // ── 2. Anatomical Catenary Drape ──
+        // Center dips at clavicle notch; sides rise up toward the trapezius slope
+        const catenaryCurve = 1.0 - Math.cos(t * (Math.PI * 0.5));
+        const y = (0.28 - v * 0.72) * h - catenaryCurve * (h * 0.18);
 
         positions.push(x, y, z);
         uvs.push(u, 1.0 - v);
@@ -756,9 +811,28 @@ export class Jewellery3DRenderer {
   }
 
   build3DNecklaceChain(material, radiusX = 50, radiusZ = 22, tubeRadius = 2.1, drape = 14) {
-    const chainPath = this.buildWornNecklacePath(radiusX, radiusZ, drape, Math.PI * 1.15);
+    const chainPath = this.buildWornNecklacePath(radiusX, radiusZ, drape, Math.PI * 1.18);
     const chainGeo = new THREE.TubeGeometry(chainPath, 64, tubeRadius, 10, false);
-    return { mesh: new THREE.Mesh(chainGeo, material), path: chainPath };
+
+    // Clone and add soft feathering at the nape ends so the 3D chain melts into the neck contour
+    const chainMat = material.clone();
+    chainMat.transparent = true;
+    chainMat.depthWrite = false;
+    chainMat.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <alphatest_fragment>",
+        `
+        #include <alphatest_fragment>
+        #ifdef USE_UV
+          float endDist = min(vUv.x, 1.0 - vUv.x);
+          float endFade = smoothstep(0.002, 0.080, endDist);
+          diffuseColor.a *= endFade;
+        #endif
+        `
+      );
+    };
+
+    return { mesh: new THREE.Mesh(chainGeo, chainMat), path: chainPath };
   }
 
   // ── Helper: Shared contact drop shadow ────────────────────────────────────
@@ -1008,7 +1082,19 @@ export class Jewellery3DRenderer {
 
         const linkGeo = new THREE.TorusGeometry(3.6, 1.25, 8, 18);
         linkGeo.scale(1.0, 1.35, 0.75);
-        const linkMesh = new THREE.Mesh(linkGeo, goldMat);
+
+        // Soft horizon fade for outermost links wrapping behind the neck
+        const endDist = Math.min(u, 1.0 - u);
+        const linkFade = Math.min(1.0, endDist / 0.08);
+        let linkMat = goldMat;
+        if (linkFade < 0.98) {
+          linkMat = goldMat.clone();
+          linkMat.transparent = true;
+          linkMat.depthWrite = false;
+          linkMat.opacity = Math.max(0.0, linkFade);
+        }
+
+        const linkMesh = new THREE.Mesh(linkGeo, linkMat);
         linkMesh.position.copy(pt);
 
         // Align with tangent
@@ -1151,7 +1237,10 @@ export class Jewellery3DRenderer {
             if (this.necklaceShadowMesh) {
               this.necklaceShadowMesh.geometry.dispose();
               this.necklaceShadowMesh.geometry = newGeo.clone();
-              this.necklaceShadowMesh.visible = false;
+              this.necklaceShadowMat.map = tex;
+              this.necklaceShadowMat.needsUpdate = true;
+              this.necklaceShadowMesh.position.set(0, -2.0, -3.5);
+              this.necklaceShadowMesh.visible = true;
             }
 
             this.necklaceMat.map = tex;
